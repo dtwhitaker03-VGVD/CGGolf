@@ -29,7 +29,7 @@ See the in-app "How handicaps work" page for the formulas and how this differs f
 
 1. Use a Supabase project — it can be the same one CGDisc uses (all tables are prefixed `golf_` and nothing existing is touched; accounts are shared between the apps).
 2. Run [`supabase/schema.sql`](supabase/schema.sql) in the SQL editor (safe to re-run; seeds both courses).
-3. Copy `.env.example` to `.env` and fill in the project URL and anon key.
+3. `.env` already points at the shared project; for a different one, copy `.env.example`.
 4. Optionally turn off "Confirm email" in Supabase Auth for a friends-only setup.
 
 ```bash
@@ -38,5 +38,5 @@ npm run dev
 npm run build
 ```
 
-`.github/workflows/deploy.yml` deploys to GitHub Pages on push to `main`; it reads
-`VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` available at build time.
+`.github/workflows/deploy.yml` deploys to GitHub Pages on push to `main`. The committed `.env`
+holds only the public Supabase URL and publishable key.

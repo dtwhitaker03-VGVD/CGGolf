@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import type { User } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "./AuthContext";
 import type {
@@ -113,6 +114,32 @@ function mapRounds(roundRows: RoundRow[], scoreRows: RoundScoreRow[]): Round[] {
   });
 }
 
+async function ensureSelfPlayer(user: User): Promise<void> {
+  const { data: mine } = await supabase
+    .from("golf_players")
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (mine) return;
+
+  const meta = user.user_metadata as { display_name?: string } | undefined;
+  const name = (meta?.display_name || user.email?.split("@")[0] || "Player").trim();
+
+  const { data: guest } = await supabase
+    .from("golf_players")
+    .select("id")
+    .is("user_id", null)
+    .ilike("name", name)
+    .order("created_at")
+    .limit(1)
+    .maybeSingle();
+  if (guest) {
+    await supabase.from("golf_players").update({ user_id: user.id }).eq("id", guest.id);
+  } else {
+    await supabase.from("golf_players").insert({ user_id: user.id, name });
+  }
+}
+
 interface AppData {
   courses: Course[];
   players: Player[];
@@ -163,7 +190,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!session) return;
-    loadAll();
+    // Make sure this account has a player row (claiming a same-named guest if
+    // one exists), then load everything. Done here rather than in a database
+    // trigger so the app works without touching the shared auth schema.
+    void ensureSelfPlayer(session.user).finally(loadAll);
 
     const channel = supabase
       .channel("cggolf-data")

@@ -78,7 +78,9 @@ create table if not exists public.golf_round_scores (
 );
 
 -- ---------------------------------------------------------------------------
--- Auto-create (or claim) a player row whenever someone signs up
+-- OPTIONAL: auto-create (or claim) a player row whenever someone signs up.
+-- The app also does this itself on first sign-in (ensureSelfPlayer), so if creating
+-- a trigger on auth.users is blocked or hangs in your project, skip this block.
 -- ---------------------------------------------------------------------------
 
 -- If a guest player (added by name only, before they had an account) already
