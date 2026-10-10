@@ -27,7 +27,7 @@ export function AuthPage() {
     <div className="min-h-screen flex items-center justify-center px-4 bg-slate-50">
       <div className="w-full max-w-sm">
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-slate-900">CGGolf</h1>
+          <h1 className="text-2xl font-bold text-slate-900">QWFGolf</h1>
           <p className="text-sm text-slate-500 mt-1">
             Track rounds and handicaps with your friends
           </p>

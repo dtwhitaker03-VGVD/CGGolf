@@ -26,7 +26,7 @@ export function HomePage() {
   return (
     <div>
       <PageHeader
-        title="CGGolf"
+        title="QWFGolf"
         subtitle="Your golf rounds, scores & handicap"
         action={
           <button

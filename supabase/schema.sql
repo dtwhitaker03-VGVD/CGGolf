@@ -1,4 +1,4 @@
--- CGGolf shared/multiplayer schema.
+-- QWFGolf shared/multiplayer schema.
 --
 -- Run this once in your Supabase project's SQL Editor (Database > SQL Editor > New query).
 -- Safe to re-run: every statement is guarded with "if not exists" / "or replace" / drop-then-create.

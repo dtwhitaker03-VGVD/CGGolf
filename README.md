@@ -1,4 +1,4 @@
-# CGGolf
+# QWFGolf
 
 A mobile-first golf tracking app for friends, built from the CGDisc disc golf app.
 Log rounds, keep a handicap index, and compare scores gross, net, or Stableford.

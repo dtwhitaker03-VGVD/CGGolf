@@ -13,8 +13,8 @@ export default defineConfig({
       injectRegister: false,
       includeAssets: ['favicon.png', 'icons/*.png'],
       manifest: {
-        name: 'CGGolf',
-        short_name: 'CGGolf',
+        name: 'QWFGolf',
+        short_name: 'QWFGolf',
         description: 'Track golf rounds, scores, and handicaps with friends.',
         theme_color: '#0f4438',
         background_color: '#f8fafc',

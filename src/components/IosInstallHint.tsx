@@ -60,7 +60,7 @@ export function IosInstallHint() {
       >
         ✕
       </button>
-      <p className="font-semibold text-slate-900 pr-6">📲 Install CGGolf on your iPhone</p>
+      <p className="font-semibold text-slate-900 pr-6">📲 Install QWFGolf on your iPhone</p>
       {needsSafari ? (
         <p className="text-sm text-slate-600 mt-1.5">
           Open this page in <strong>Safari</strong> (not Chrome) — then tap the Share icon and
