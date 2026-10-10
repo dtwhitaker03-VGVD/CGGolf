@@ -7,6 +7,7 @@ interface AuthState {
   loading: boolean;
   signUp: (email: string, password: string, displayName: string) => Promise<string | null>;
   signIn: (email: string, password: string) => Promise<string | null>;
+  signInWithPhone: (name: string, phone: string) => Promise<string | null>;
   signOut: () => Promise<void>;
 }
 
@@ -41,12 +42,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return error?.message ?? null;
   }
 
+  // Name + phone only, no verification: the phone number maps to a hidden
+  // email/password pair. Signs in if the number is known, otherwise creates it.
+  async function signInWithPhone(name: string, phone: string) {
+    const digits = phone.replace(/\D/g, "").replace(/^1(\d{10})$/, "$1");
+    if (digits.length < 10) return "Enter a valid 10-digit phone number.";
+    const email = `${digits}@phone.cggolf.app`;
+    const password = `cggolf-${digits}-phone`;
+    const first = await supabase.auth.signInWithPassword({ email, password });
+    if (!first.error) return null;
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { display_name: name } },
+    });
+    if (error) return error.message;
+    if (!data.session) {
+      return "Sign-up needs 'Confirm email' turned off in Supabase (Authentication → Providers → Email).";
+    }
+    return null;
+  }
+
   async function signOut() {
     await supabase.auth.signOut();
   }
 
   return (
-    <AuthCtx.Provider value={{ session, loading, signUp, signIn, signOut }}>
+    <AuthCtx.Provider value={{ session, loading, signUp, signIn, signInWithPhone, signOut }}>
       {children}
     </AuthCtx.Provider>
   );
