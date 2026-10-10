@@ -40,6 +40,7 @@ interface CourseRow {
   location: string | null;
   holes: Hole[];
   tees: Tee[];
+  hide_from_new_round: boolean;
   created_at: string;
 }
 
@@ -82,6 +83,7 @@ function mapCourse(row: CourseRow): Course {
     location: row.location ?? undefined,
     holes: row.holes,
     tees: row.tees,
+    hideFromNewRound: row.hide_from_new_round || undefined,
     createdAt: row.created_at,
   };
 }
@@ -244,6 +246,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       if (patch.location !== undefined) dbPatch.location = patch.location ?? null;
       if (patch.holes !== undefined) dbPatch.holes = patch.holes;
       if (patch.tees !== undefined) dbPatch.tees = patch.tees;
+      if ("hideFromNewRound" in patch) dbPatch.hide_from_new_round = Boolean(patch.hideFromNewRound);
       const { error } = await supabase.from("golf_courses").update(dbPatch).eq("id", id);
       if (error) throw new Error(error.message);
       await loadAll();

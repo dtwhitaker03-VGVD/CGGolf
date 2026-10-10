@@ -119,7 +119,7 @@ export function NewRoundPage() {
   });
 
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
-  const [courseId, setCourseId] = useState(params.get("course") ?? courses[0]?.id ?? "");
+  const [courseId, setCourseId] = useState(params.get("course") ?? courses.find((c) => !c.hideFromNewRound)?.id ?? courses[0]?.id ?? "");
   const [date, setDate] = useState(today());
   const [holesPlayed, setHolesPlayed] = useState<RoundHoles>("all");
   const [selected, setSelected] = useState<string[]>([]);
@@ -407,7 +407,8 @@ export function NewRoundPage() {
                 setEntries({});
               }}
             >
-              {courses.map((c) => (
+              {/* Courses marked "hide from New Round" stay out of the list unless one is already selected. */}
+              {courses.filter((c) => !c.hideFromNewRound || c.id === courseId).map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
                 </option>

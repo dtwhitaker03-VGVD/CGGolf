@@ -26,6 +26,8 @@ export interface Course {
   location?: string;
   holes: Hole[];
   tees: Tee[];
+  /** Keep this course out of the New Round course picker (it still has its own page, rounds and stats). */
+  hideFromNewRound?: boolean;
   createdAt: string;
 }
 

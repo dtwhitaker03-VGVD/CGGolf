@@ -118,7 +118,9 @@ export function CourseDetailPage() {
         </p>
       )}
 
-      <LinkButton to={`/round/new?course=${course.id}`}>⛳ Play here</LinkButton>
+      {!course.hideFromNewRound && (
+        <LinkButton to={`/round/new?course=${course.id}`}>⛳ Play here</LinkButton>
+      )}
     </div>
   );
 }

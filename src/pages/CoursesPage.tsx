@@ -41,6 +41,9 @@ export function CoursesPage() {
                 <Card>
                   <p className="font-semibold text-slate-900">{course.name}</p>
                   {course.location && <p className="text-sm text-slate-500">{course.location}</p>}
+                  {course.hideFromNewRound && (
+                    <p className="text-[11px] text-slate-400">Not offered for new rounds</p>
+                  )}
                   <p className="text-sm text-slate-400 mt-1">
                     {course.holes.length} holes · par {coursePar(course)}
                     {longest && ` · ${teeYards(longest, course).toLocaleString()} yds`}

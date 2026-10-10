@@ -45,6 +45,7 @@ export function CourseFormPage() {
   const [hasWomenIndex, setHasWomenIndex] = useState(
     existing ? existing.holes.some((h) => h.strokeIndexW !== undefined) : false,
   );
+  const [hideFromNewRound, setHideFromNewRound] = useState(existing?.hideFromNewRound ?? false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -115,6 +116,7 @@ export function CourseFormPage() {
           location: location.trim() || undefined,
           holes: cleanHoles,
           tees: cleanTees,
+          hideFromNewRound,
         });
         navigate(`/courses/${existing.id}`);
       } else {
@@ -150,6 +152,20 @@ export function CourseFormPage() {
             placeholder="City, ST"
           />
         </Field>
+        <label className="flex items-start gap-2 text-sm text-slate-700">
+          <input
+            type="checkbox"
+            className="mt-0.5"
+            checked={hideFromNewRound}
+            onChange={(e) => setHideFromNewRound(e.target.checked)}
+          />
+          <span>
+            Hide from the New Round course picker
+            <span className="block text-xs text-slate-400">
+              For a course you only keep for old scorecards. It still shows in Courses and Stats.
+            </span>
+          </span>
+        </label>
         <Field label="Number of holes">
           <div className="flex gap-2">
             {[9, 18].map((n) => (

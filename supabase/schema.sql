@@ -66,6 +66,9 @@ create table if not exists public.golf_rounds (
 
 alter table public.golf_rounds alter column date drop not null;
 
+-- Courses kept only for old scorecards can be left out of the New Round course picker.
+alter table public.golf_courses add column if not exists hide_from_new_round boolean not null default false;
+
 -- Round type and scoring. Added after the first release, so these are alter statements
 -- (safe to re-run) rather than part of the create table above.
 --   mode:     'straight' (everyone scratch), 'handicap' (strokes by hole), 'team'
