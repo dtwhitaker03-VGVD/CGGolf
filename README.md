@@ -8,6 +8,7 @@ Pre-loaded courses (hole-by-hole pars, hole handicaps, tee yardages, rating/slop
 - **Bent Creek Golf Course** — Jackson, MO (par 72; Black/Blue/White/Green/Red tees)
 - **Cape Jaycee Municipal Golf Course** — Cape Girardeau, MO (par 70; White/Gold/Red tees)
 - **Cape Girardeau Country Club** — Cape Girardeau, MO (par 70; Blue/White/Gold/Red/Pink tees)
+- **Kimberland Country Club** — Jackson, MO (par 72; Black/Blue/B-W Combo/White/W-R Combo/Red tees)
 
 Cape Jaycee's ratings match its printed scorecard (White 67.6/118). Bent Creek's come from GolfPass —
 check them against the paper scorecard and fix anything off in the app (Courses → course → Edit).
