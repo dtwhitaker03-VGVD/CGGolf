@@ -213,6 +213,8 @@ end $$;
 -- already exists, so edits you make in the app are never overwritten)
 -- ---------------------------------------------------------------------------
 
+-- Cape Girardeau Country Club -- from its printed scorecard (men's par 70; ladies' par
+-- differs on a few holes, which the app doesn't model, so Red/Pink use the men's par).
 -- Sources: Bent Creek -- GolfPass scorecard (tee ratings/slopes, hole
 -- yardages, men's and women's stroke indexes). Cape Jaycee -- City of Cape
 -- Girardeau scorecard PDF for yardages, stroke indexes and tee ratings (these
@@ -232,6 +234,12 @@ select * from (values
     'Cape Girardeau, MO',
     '[{"number":1,"par":4,"strokeIndex":5,"strokeIndexW":3},{"number":2,"par":5,"strokeIndex":7,"strokeIndexW":7},{"number":3,"par":3,"strokeIndex":15,"strokeIndexW":13},{"number":4,"par":4,"strokeIndex":17,"strokeIndexW":9},{"number":5,"par":4,"strokeIndex":1,"strokeIndexW":1},{"number":6,"par":3,"strokeIndex":11,"strokeIndexW":15},{"number":7,"par":4,"strokeIndex":9,"strokeIndexW":5},{"number":8,"par":3,"strokeIndex":13,"strokeIndexW":17},{"number":9,"par":4,"strokeIndex":3,"strokeIndexW":11},{"number":10,"par":4,"strokeIndex":10,"strokeIndexW":12},{"number":11,"par":5,"strokeIndex":8,"strokeIndexW":10},{"number":12,"par":3,"strokeIndex":12,"strokeIndexW":14},{"number":13,"par":4,"strokeIndex":18,"strokeIndexW":16},{"number":14,"par":4,"strokeIndex":16,"strokeIndexW":8},{"number":15,"par":5,"strokeIndex":4,"strokeIndexW":2},{"number":16,"par":4,"strokeIndex":6,"strokeIndexW":6},{"number":17,"par":4,"strokeIndex":2,"strokeIndexW":4},{"number":18,"par":3,"strokeIndex":14,"strokeIndexW":18}]'::jsonb,
     '[{"name":"White","color":"#e5e7eb","rating":67.6,"slope":118,"yards":[339,552,147,321,334,211,282,185,388,301,425,169,298,288,558,392,396,183]},{"name":"Gold","color":"#eab308","rating":63.2,"slope":103,"yards":[322,405,137,290,328,175,271,158,300,207,350,125,283,120,472,318,375,123]},{"name":"Red","color":"#dc2626","rating":65.7,"slope":107,"useWomenIndex":true,"yards":[306,381,132,255,312,167,261,134,296,207,345,120,197,218,405,260,334,118]}]'::jsonb
+  ),
+  (
+    'Cape Girardeau Country Club',
+    'Cape Girardeau, MO',
+    '[{"number":1,"par":4,"strokeIndex":7,"strokeIndexW":5},{"number":2,"par":3,"strokeIndex":13,"strokeIndexW":15},{"number":3,"par":4,"strokeIndex":5,"strokeIndexW":9},{"number":4,"par":5,"strokeIndex":9,"strokeIndexW":7},{"number":5,"par":4,"strokeIndex":11,"strokeIndexW":11},{"number":6,"par":3,"strokeIndex":15,"strokeIndexW":13},{"number":7,"par":4,"strokeIndex":3,"strokeIndexW":3},{"number":8,"par":3,"strokeIndex":17,"strokeIndexW":17},{"number":9,"par":5,"strokeIndex":1,"strokeIndexW":1},{"number":10,"par":4,"strokeIndex":12,"strokeIndexW":10},{"number":11,"par":3,"strokeIndex":16,"strokeIndexW":18},{"number":12,"par":4,"strokeIndex":2,"strokeIndexW":4},{"number":13,"par":3,"strokeIndex":18,"strokeIndexW":16},{"number":14,"par":4,"strokeIndex":8,"strokeIndexW":8},{"number":15,"par":5,"strokeIndex":10,"strokeIndexW":12},{"number":16,"par":3,"strokeIndex":14,"strokeIndexW":14},{"number":17,"par":4,"strokeIndex":4,"strokeIndexW":6},{"number":18,"par":5,"strokeIndex":6,"strokeIndexW":2}]'::jsonb,
+    '[{"name":"Blue","color":"#2563eb","rating":70.6,"slope":126,"yards":[395,185,410,490,385,155,415,145,570,390,155,440,145,440,500,208,465,560]},{"name":"White","color":"#e5e7eb","rating":68.1,"slope":123,"yards":[370,160,365,475,360,135,395,130,535,375,135,430,140,385,485,180,370,490]},{"name":"Gold","color":"#eab308","rating":65.6,"slope":110,"yards":[310,150,330,420,325,125,340,120,450,310,105,378,135,375,385,165,315,470]},{"name":"Red","color":"#dc2626","rating":69.1,"slope":120,"useWomenIndex":true,"yards":[315,130,320,405,315,115,335,95,445,300,100,420,130,425,260,160,310,440]},{"name":"Pink","color":"#ec4899","rating":67.3,"slope":115,"useWomenIndex":true,"yards":[315,130,320,405,315,115,256,95,400,229,100,370,130,385,260,160,310,395]}]'::jsonb
   )
 ) as seed(name, location, holes, tees)
 where not exists (
