@@ -1,4 +1,4 @@
-import { HashRouter, Route, Routes } from "react-router-dom";
+import { HashRouter, Navigate, Route, Routes, useParams } from "react-router-dom";
 import { AuthProvider, useAuth } from "./store/AuthContext";
 import { AppDataProvider, useAppData } from "./store/AppDataContext";
 import { NavBar } from "./components/NavBar";
@@ -12,7 +12,6 @@ import { RoundsPage } from "./pages/RoundsPage";
 import { RoundDetailPage } from "./pages/RoundDetailPage";
 import { StatsPage } from "./pages/StatsPage";
 import { PlayerStatsPage } from "./pages/PlayerStatsPage";
-import { CourseStatsPage } from "./pages/CourseStatsPage";
 import { AboutHandicapsPage } from "./pages/AboutHandicapsPage";
 import { CourseDetailPage } from "./pages/CourseDetailPage";
 
@@ -22,6 +21,12 @@ function FullScreenMessage({ children }: { children: React.ReactNode }) {
       <p className="text-sm text-slate-500">{children}</p>
     </div>
   );
+}
+
+/** Course stats now live on the course page; keep old links working. */
+function CourseStatsRedirect() {
+  const { id } = useParams();
+  return <Navigate to={`/courses/${id}`} replace />;
 }
 
 function AppRoutes() {
@@ -44,7 +49,7 @@ function AppRoutes() {
             <Route path="/round/:id" element={<RoundDetailPage />} />
             <Route path="/stats" element={<StatsPage />} />
             <Route path="/stats/:id" element={<PlayerStatsPage />} />
-            <Route path="/stats/course/:id" element={<CourseStatsPage />} />
+            <Route path="/stats/course/:id" element={<CourseStatsRedirect />} />
             <Route path="/about-handicaps" element={<AboutHandicapsPage />} />
           </Routes>
         </div>
