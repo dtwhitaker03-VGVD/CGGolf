@@ -15,9 +15,12 @@ scorecard and fix anything off in the app (Courses → course → Edit).
 
 - Accounts shared across phones via Supabase, plus guest players added by name.
 - **Courses** — scorecard per tee; add/edit courses, tees, rating/slope, hole handicaps.
-- **New round** — course, 18 / front 9 / back 9, scoring format (gross, net, Stableford),
-  players, each player's tee and handicap index. Hole-by-hole scoring with live standings;
-  an in-progress round survives a refresh.
+- **New round** — course, 18 / front 9 / back 9, players, each player's tee and handicap index, then a
+  round type like CGDisc: **Straight up**, **Handicapped** (strokes by hole handicap) or **Team**
+  (Scramble, Best ball, Team total — best ball/team total can use handicap strokes), scored **by strokes**,
+  **by holes** (match play), or Stableford (handicapped). Hole-by-hole scoring with a live leaderboard,
+  **honors** (lowest score on the last hole goes first; net in handicapped rounds), and "Left early".
+  An in-progress round survives a refresh.
 - **Handicaps** — strokes allocated by hole handicap rank; a World Handicap System-style index
   (differentials, net-double-bogey cap, best-of-20) from complete 18-hole rounds on rated tees.
   Enter a *starting index* per friend until they have 3 rounds.

@@ -7,6 +7,7 @@ import {
   totalScore,
   type HoleCounts,
 } from "./golf";
+import { isIndividuallyScored } from "./rounds";
 
 export interface ScoreStats {
   rounds: number;
@@ -40,7 +41,7 @@ export function courseTotalsByPlayer(
 ): Map<string, number[]> {
   const byPlayer = new Map<string, number[]>();
   for (const round of rounds) {
-    if (round.courseId !== course.id || round.holes !== "all") continue;
+    if (round.courseId !== course.id || round.holes !== "all" || !isIndividuallyScored(round)) continue;
     for (const playerId of round.playerIds) {
       const strokes = round.scores[playerId];
       if (!isComplete(strokes, course.holes.length)) continue;
@@ -60,7 +61,7 @@ export function playerTotalsByCourse(
 ): Map<string, number[]> {
   const byCourse = new Map<string, number[]>();
   for (const round of rounds) {
-    if (round.holes !== "all") continue;
+    if (round.holes !== "all" || !isIndividuallyScored(round)) continue;
     const course = coursesById.get(round.courseId);
     const strokes = round.scores[playerId];
     if (!course || !isComplete(strokes, course.holes.length)) continue;
@@ -81,7 +82,7 @@ export function playerHoleCounts(
   for (const round of rounds) {
     const course = coursesById.get(round.courseId);
     const strokes = round.scores[playerId];
-    if (!course) continue;
+    if (!course || !isIndividuallyScored(round)) continue;
     const holes = playedHoles(course, round.holes);
     if (!isComplete(strokes, holes.length)) continue;
     strokes.forEach((s, i) => tallyHole(s, holes[i].par, counts));
@@ -101,7 +102,7 @@ export interface HoleDifficulty {
 export function holeDifficulty(course: Course, rounds: Round[]): HoleDifficulty[] {
   const sums = course.holes.map(() => ({ total: 0, n: 0 }));
   for (const round of rounds) {
-    if (round.courseId !== course.id) continue;
+    if (round.courseId !== course.id || !isIndividuallyScored(round)) continue;
     const idx = holeIndexes(course, round.holes);
     for (const playerId of round.playerIds) {
       const strokes = round.scores[playerId];

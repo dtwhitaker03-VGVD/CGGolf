@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useAppData } from "../store/AppDataContext";
-import { formatVsPar, playerResult, roundHolesLabel } from "../lib/golf";
 import { Card, EmptyState, LinkButton, PageHeader } from "../components/ui";
+import { RoundSummary, roundTags } from "../components/RoundSummary";
 
 export function RoundsPage() {
   const { rounds, coursesById, playersById } = useAppData();
@@ -29,26 +29,8 @@ export function RoundsPage() {
                     <p className="font-semibold text-slate-900">{course.name}</p>
                     <p className="text-sm text-slate-400">{round.date}</p>
                   </div>
-                  {round.holes !== "all" && (
-                    <p className="text-xs text-slate-400 mb-1">{roundHolesLabel(round.holes)}</p>
-                  )}
-                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm">
-                    {round.playerIds.map((pid) => {
-                      const player = playersById.get(pid);
-                      const r = playerResult(round, course, pid);
-                      if (!r || !player) return null;
-                      return (
-                        <span key={pid}>
-                          <span style={{ color: player.color }} className="font-medium">
-                            {player.name}
-                          </span>{" "}
-                          <span className="tabular-nums text-slate-600">
-                            {r.gross} ({formatVsPar(r.vsPar)})
-                          </span>
-                        </span>
-                      );
-                    })}
-                  </div>
+                  <p className="text-xs text-slate-400 mb-1.5">{roundTags(round)}</p>
+                  <RoundSummary round={round} course={course} playersById={playersById} />
                 </Card>
               </Link>
             );

@@ -2,12 +2,13 @@ import { Link } from "react-router-dom";
 import { useAppData } from "../store/AppDataContext";
 import { useAuth } from "../store/AuthContext";
 import { playerIndex } from "../lib/players";
-import { formatIndex, formatVsPar, playerResult, roundHolesLabel } from "../lib/golf";
+import { formatIndex } from "../lib/golf";
 import { Card, EmptyState, LinkButton, PageHeader } from "../components/ui";
 import { IosInstallHint } from "../components/IosInstallHint";
+import { RoundSummary, roundTags } from "../components/RoundSummary";
 
 export function HomePage() {
-  const { players, rounds, courses, coursesById } = useAppData();
+  const { players, rounds, courses, coursesById, playersById } = useAppData();
   const { session, signOut } = useAuth();
 
   const standings = players
@@ -57,27 +58,9 @@ export function HomePage() {
           </p>
           <Link to={`/round/${lastRound.id}`} className="block">
             <p className="font-semibold text-slate-900">{lastCourse.name}</p>
-            <p className="text-sm text-slate-500">
-              {lastRound.date}
-              {lastRound.holes !== "all" && ` · ${roundHolesLabel(lastRound.holes)}`}
-            </p>
-            <div className="mt-2 flex flex-wrap gap-3">
-              {lastRound.playerIds.map((pid) => {
-                const player = players.find((p) => p.id === pid);
-                const r = playerResult(lastRound, lastCourse, pid);
-                if (!r || !player) return null;
-                return (
-                  <div key={pid} className="text-sm">
-                    <span className="font-medium" style={{ color: player.color }}>
-                      {player.name}
-                    </span>{" "}
-                    <span className="tabular-nums">
-                      {r.gross} ({formatVsPar(r.vsPar)})
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
+            <p className="text-sm text-slate-500">{lastRound.date}</p>
+            <p className="text-xs text-slate-400 mb-1.5">{roundTags(lastRound)}</p>
+            <RoundSummary round={lastRound} course={lastCourse} playersById={playersById} />
           </Link>
         </Card>
       )}

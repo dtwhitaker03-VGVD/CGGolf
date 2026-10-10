@@ -1,4 +1,4 @@
-import type { Course, Hole, PlayerSetup, Round, RoundFormat, RoundHoles, Tee } from "../types";
+import type { Course, Hole, PlayerSetup, Round, RoundHoles, Tee } from "../types";
 
 // ---------------------------------------------------------------------------
 // Which holes a round covers
@@ -106,6 +106,8 @@ export function stablefordTotal(gross: number[], holes: Hole[], received: number
 
 export interface PlayerResult {
   playerId: string;
+  /** Holes with a score (fewer than the round's holes if the player left early). */
+  holes: number;
   gross: number;
   net: number;
   stableford: number;
@@ -113,41 +115,30 @@ export interface PlayerResult {
   complete: boolean;
 }
 
-/** Gross/net/Stableford for one player in a round. `complete` = every hole has a score. */
+/**
+ * Gross/net/Stableford totals for one player in a round, over the holes they
+ * actually played. `complete` = every hole of the round has a score.
+ */
 export function playerResult(round: Round, course: Course, playerId: string): PlayerResult | null {
   const gross = round.scores[playerId];
   const setup = round.setups[playerId];
   if (!gross || !setup) return null;
   const holes = playedHoles(course, round.holes);
   const received = setupStrokes(course, round.holes, setup);
-  const complete = gross.length === holes.length && gross.every((s) => Number.isFinite(s) && s > 0);
+  const played = holes.slice(0, gross.length);
   return {
     playerId,
+    holes: gross.length,
     gross: totalScore(gross),
-    net: netScore(gross, received),
-    stableford: stablefordTotal(gross, holes, received),
-    vsPar: totalScore(gross) - holes.reduce((s, h) => s + h.par, 0),
-    complete,
+    net: totalScore(gross) - received.slice(0, gross.length).reduce((s, v) => s + v, 0),
+    stableford: stablefordTotal(gross, played, received),
+    vsPar: totalScore(gross) - played.reduce((s, h) => s + h.par, 0),
+    complete: gross.length === holes.length && gross.every((s) => Number.isFinite(s) && s > 0),
   };
-}
-
-/** Sort results best-first for a round's format (stableford: higher is better). */
-export function rankResults(results: PlayerResult[], format: RoundFormat): PlayerResult[] {
-  const key = (r: PlayerResult) =>
-    format === "gross" ? r.gross : format === "net" ? r.net : -r.stableford;
-  return [...results].sort((a, b) => key(a) - key(b));
-}
-
-export function formatValue(r: PlayerResult, format: RoundFormat): string {
-  return format === "gross" ? String(r.gross) : format === "net" ? String(r.net) : `${r.stableford} pts`;
 }
 
 export function formatVsPar(n: number): string {
   return n === 0 ? "E" : n > 0 ? `+${n}` : String(n);
-}
-
-export function formatLabel(format: RoundFormat): string {
-  return format === "gross" ? "Stroke play (gross)" : format === "net" ? "Stroke play (net)" : "Stableford";
 }
 
 // ---------------------------------------------------------------------------
@@ -227,6 +218,8 @@ export function playerDifferentials(
   const out: Differential[] = [];
   for (const round of rounds) {
     if (round.holes !== "all") continue;
+    // A scramble is one shared ball, so it says nothing about this player's own game.
+    if (round.mode === "team" && round.teamGameType === "scramble") continue;
     const course = coursesById.get(round.courseId);
     const setup = round.setups[playerId];
     const gross = round.scores[playerId];

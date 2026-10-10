@@ -58,7 +58,16 @@ export interface PlayerSetup {
 }
 
 export type RoundHoles = "all" | "front" | "back";
-export type RoundFormat = "gross" | "net" | "stableford";
+/** Straight up = everyone plays scratch; handicap = strokes by hole; team = teams. */
+export type RoundMode = "straight" | "handicap" | "team";
+/** How a winner is decided: lowest strokes, most holes won (match play), or Stableford points. */
+export type ScoringMethod = "strokes" | "holes" | "stableford";
+/**
+ * - scramble: the team plays one ball, one shared score per hole (not counted toward handicap).
+ * - bestBall: everyone plays their own ball; the team's score on a hole is its lowest.
+ * - teamTotal: everyone plays their own ball; the team's score is the sum of teammates.
+ */
+export type TeamGameType = "scramble" | "bestBall" | "teamTotal";
 
 export interface Round {
   id: string;
@@ -66,12 +75,23 @@ export interface Round {
   date: string; // ISO date (yyyy-mm-dd)
   /** Which holes were played: all 18, or just the front/back nine. */
   holes: RoundHoles;
-  /** How the round's winner is decided. Gross strokes are always recorded. */
-  format: RoundFormat;
+  mode: RoundMode;
+  scoring: ScoringMethod;
   playerIds: string[];
   /** playerId -> gross strokes per hole played, in hole order. */
   scores: Record<string, number[]>;
   setups: Record<string, PlayerSetup>;
+  /** playerId -> team index (0-based), for team rounds. */
+  teamAssignments?: Record<string, number>;
+  teamGameType?: TeamGameType;
+  /** Team rounds only: apply handicap strokes to best ball / team total scores. */
+  teamHandicap?: boolean;
+  /**
+   * playerId -> how many holes they played before leaving early. Their score
+   * through that point is kept, but the round doesn't count toward their
+   * handicap or course stats since it isn't a complete round.
+   */
+  droppedPlayers?: Record<string, number>;
   notes?: string;
   createdAt: string;
 }

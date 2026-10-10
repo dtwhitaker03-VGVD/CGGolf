@@ -56,13 +56,30 @@ create table if not exists public.golf_rounds (
   date date not null,
   -- Which holes were played: the full 18, or just one nine.
   holes_played text not null default 'all' check (holes_played in ('all', 'front', 'back')),
-  -- How the round's winner is decided. Gross strokes are always recorded;
-  -- this picks the headline ranking: 'gross', 'net' or 'stableford'.
+  -- LEGACY: superseded by mode + scoring below (kept so older databases don't need a destructive migration).
   format text not null default 'gross' check (format in ('gross', 'net', 'stableford')),
   notes text,
   created_by uuid references public.golf_players (id) on delete set null,
   created_at timestamptz not null default now()
 );
+
+-- Round type and scoring. Added after the first release, so these are alter statements
+-- (safe to re-run) rather than part of the create table above.
+--   mode:     'straight' (everyone scratch), 'handicap' (strokes by hole), 'team'
+--   scoring:  'strokes', 'holes' (match play: most holes won), 'stableford' (handicap rounds)
+--   team_*:   team rounds -- playerId -> team index, scramble / bestBall / teamTotal, and whether
+--             handicap strokes apply to best ball / team total
+--   dropped_players: playerId -> holes played before leaving early
+alter table public.golf_rounds
+  add column if not exists mode text not null default 'straight' check (mode in ('straight', 'handicap', 'team')),
+  add column if not exists scoring text not null default 'strokes' check (scoring in ('strokes', 'holes', 'stableford')),
+  add column if not exists team_assignments jsonb,
+  add column if not exists team_game_type text check (team_game_type in ('scramble', 'bestBall', 'teamTotal')),
+  add column if not exists team_handicap boolean not null default false,
+  add column if not exists dropped_players jsonb;
+
+update public.golf_rounds set mode = 'handicap' where format in ('net', 'stableford') and mode = 'straight';
+update public.golf_rounds set scoring = 'stableford' where format = 'stableford' and scoring = 'strokes';
 
 -- One row per player per round. strokes = gross score per hole played, in hole
 -- order. setup = that player's tee/rating/slope/playing handicap, locked in at

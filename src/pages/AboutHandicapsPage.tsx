@@ -34,7 +34,7 @@ export function AboutHandicapsPage() {
             the hardest holes first using each scorecard's hole handicap row. Nine-hole rounds get half.
           </p>
           <p className="mt-2">
-            Net score is gross minus your strokes. <strong>Stableford</strong> gives 2 points for a net par, 3
+            In a <strong>Handicapped</strong> round (and best ball / team total with strokes on) scores are compared net. <strong>Scramble</strong> rounds and rounds where someone left early don't count toward an index. <strong>Stableford</strong> gives 2 points for a net par, 3
             for a birdie, 4 for an eagle, 1 for a bogey and 0 for worse.
           </p>
         </Card>

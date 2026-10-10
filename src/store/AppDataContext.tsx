@@ -16,9 +16,11 @@ import type {
   Player,
   PlayerSetup,
   Round,
-  RoundFormat,
   RoundHoles,
+  RoundMode,
+  ScoringMethod,
   Tee,
+  TeamGameType,
 } from "../types";
 
 const PLAYER_COLORS = [
@@ -55,7 +57,12 @@ interface RoundRow {
   course_id: string;
   date: string;
   holes_played: RoundHoles;
-  format: RoundFormat;
+  mode: RoundMode;
+  scoring: ScoringMethod;
+  team_assignments: Record<string, number> | null;
+  team_game_type: TeamGameType | null;
+  team_handicap: boolean;
+  dropped_players: Record<string, number> | null;
   notes: string | null;
   created_at: string;
 }
@@ -104,7 +111,12 @@ function mapRounds(roundRows: RoundRow[], scoreRows: RoundScoreRow[]): Round[] {
       courseId: r.course_id,
       date: r.date,
       holes: r.holes_played,
-      format: r.format,
+      mode: r.mode,
+      scoring: r.scoring,
+      teamAssignments: r.team_assignments ?? undefined,
+      teamGameType: r.team_game_type ?? undefined,
+      teamHandicap: r.team_handicap || undefined,
+      droppedPlayers: r.dropped_players ?? undefined,
       notes: r.notes ?? undefined,
       playerIds: rowScores.map((s) => s.player_id),
       scores: Object.fromEntries(rowScores.map((s) => [s.player_id, s.strokes])),
@@ -276,7 +288,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           course_id: input.courseId,
           date: input.date,
           holes_played: input.holes,
-          format: input.format,
+          mode: input.mode,
+          scoring: input.scoring,
+          team_assignments: input.teamAssignments ?? null,
+          team_game_type: input.teamGameType ?? null,
+          team_handicap: input.teamHandicap ?? false,
+          dropped_players: input.droppedPlayers ?? null,
           notes: input.notes ?? null,
           created_by: playerRows.find((p) => p.user_id === selfUserId)?.id ?? null,
         })
@@ -300,7 +317,6 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     const updateRound: AppData["updateRound"] = async (id, patch) => {
       const dbPatch: Record<string, unknown> = {};
       if (patch.date !== undefined) dbPatch.date = patch.date;
-      if (patch.format !== undefined) dbPatch.format = patch.format;
       if (patch.notes !== undefined) dbPatch.notes = patch.notes ?? null;
       if (Object.keys(dbPatch).length > 0) {
         const { error } = await supabase.from("golf_rounds").update(dbPatch).eq("id", id);

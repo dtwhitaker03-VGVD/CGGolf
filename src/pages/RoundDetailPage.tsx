@@ -1,22 +1,19 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAppData } from "../store/AppDataContext";
+import { findTee, formatVsPar, playedHoles, playerResult, setupStrokes, totalScore } from "../lib/golf";
 import {
-  findTee,
-  formatLabel,
-  formatValue,
-  formatVsPar,
-  playedHoles,
-  playerResult,
-  rankResults,
-  roundHolesLabel,
-  setupStrokes,
-  totalScore,
-  type PlayerResult,
-} from "../lib/golf";
+  appliesStrokes,
+  isScramble,
+  modeLabel,
+  scoringLabel,
+  teamIndexes,
+  teamName,
+} from "../lib/rounds";
 import { Button, Card, EmptyState, LinkButton, PageHeader, TeeDot } from "../components/ui";
 import { ScoreStepper } from "../components/ScoreStepper";
-import type { RoundFormat } from "../types";
+import { Leaderboards } from "../components/Leaderboards";
+import { roundTags } from "../components/RoundSummary";
 
 /** Circle for birdie or better, square for bogey or worse -- the traditional scorecard marks. */
 function scoreMark(strokes: number, par: number): string {
@@ -31,7 +28,7 @@ function scoreMark(strokes: number, par: number): string {
 export function RoundDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { rounds, coursesById, playersById, updateRound, deleteRound } = useAppData();
+  const { rounds, players, coursesById, playersById, updateRound, deleteRound } = useAppData();
 
   const round = useMemo(() => rounds.find((r) => r.id === id), [rounds, id]);
   const course = round ? coursesById.get(round.courseId) : undefined;
@@ -50,13 +47,12 @@ export function RoundDetailPage() {
   const holes = playedHoles(course, round.holes);
   const scores = draft ?? round.scores;
   const view = { ...round, scores };
-  const results = round.playerIds
-    .map((pid) => playerResult(view, course, pid))
-    .filter((r): r is PlayerResult => r !== null);
-  const ranked = rankResults(results, round.format);
+  const strokesOn = appliesStrokes(round);
+  const scramble = isScramble(round);
   const received = Object.fromEntries(
     round.playerIds.map((pid) => [pid, round.setups[pid] ? setupStrokes(course, round.holes, round.setups[pid]) : []]),
   );
+  const teamOf = (pid: string) => round.teamAssignments?.[pid] ?? 0;
 
   async function saveEdits() {
     if (!draft) return;
@@ -70,20 +66,20 @@ export function RoundDetailPage() {
     }
   }
 
-  async function changeFormat(format: RoundFormat) {
-    await updateRound(round!.id, { format });
-  }
-
   function setScore(pid: string, h: number, value: number) {
     const base = draft ?? round!.scores;
-    setDraft({ ...base, [pid]: base[pid].map((s, i) => (i === h ? value : s)) });
+    // A scramble is one shared ball, so a change applies to the whole team.
+    const targets = scramble ? round!.playerIds.filter((p) => teamOf(p) === teamOf(pid)) : [pid];
+    const next = { ...base };
+    for (const t of targets) next[t] = base[t].map((s, i) => (i === h ? value : s));
+    setDraft(next);
   }
 
   return (
     <div>
       <PageHeader
         title={course.name}
-        subtitle={`${round.date} · ${roundHolesLabel(round.holes)}`}
+        subtitle={`${round.date} · ${roundTags(round)}`}
         action={
           <button
             type="button"
@@ -100,21 +96,28 @@ export function RoundDetailPage() {
         }
       />
 
-      <Card className="mb-4">
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-            Results · {formatLabel(round.format)}
+      <Leaderboards
+        round={view}
+        course={course}
+        players={players}
+        through={holes.length}
+        className="mb-4"
+      />
+
+      {round.mode !== "team" && (
+        <Card className="mb-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">
+            {modeLabel(round)} · {scoringLabel(round.scoring)}
           </p>
-        </div>
-        <ul className="divide-y divide-slate-100">
-          {ranked.map((r, i) => {
-            const player = playersById.get(r.playerId);
-            const setup = round.setups[r.playerId];
-            const tee = setup ? findTee(course, setup.tee) : undefined;
-            return (
-              <li key={r.playerId} className="py-2.5 flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <span className="text-sm text-slate-400 w-4">{i + 1}</span>
+          <ul className="divide-y divide-slate-100">
+            {round.playerIds.map((pid) => {
+              const player = playersById.get(pid);
+              const r = playerResult(view, course, pid);
+              const setup = round.setups[pid];
+              const tee = setup ? findTee(course, setup.tee) : undefined;
+              if (!r) return null;
+              return (
+                <li key={pid} className="py-2 flex items-center justify-between text-sm">
                   <div>
                     <p className="font-medium" style={{ color: player?.color }}>
                       {player?.name}
@@ -127,34 +130,15 @@ export function RoundDetailPage() {
                         : " · scratch"}
                     </p>
                   </div>
-                </div>
-                <div className="text-right tabular-nums">
-                  <p className="font-semibold text-lg leading-tight">{formatValue(r, round.format)}</p>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-right text-xs text-slate-500 tabular-nums">
                     Gross {r.gross} ({formatVsPar(r.vsPar)}) · Net {r.net} · {r.stableford} pts
                   </p>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-        <div className="flex gap-1.5 mt-3">
-          {(["gross", "net", "stableford"] as RoundFormat[]).map((f) => (
-            <button
-              key={f}
-              type="button"
-              onClick={() => void changeFormat(f)}
-              className={`flex-1 rounded-lg py-1.5 text-xs font-semibold border ${
-                round.format === f
-                  ? "bg-green-700 text-white border-green-700"
-                  : "bg-white text-slate-600 border-slate-300"
-              }`}
-            >
-              Rank by {f}
-            </button>
-          ))}
-        </div>
-      </Card>
+                </li>
+              );
+            })}
+          </ul>
+        </Card>
+      )}
 
       <Card className="mb-4 overflow-x-auto">
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">Scorecard</p>
@@ -165,19 +149,24 @@ export function RoundDetailPage() {
                 <p className="text-xs text-slate-400 mb-1">
                   Hole {h.number} · par {h.par}
                 </p>
-                {round.playerIds.map((pid) => (
-                  <div key={pid} className="flex items-center justify-between py-1">
-                    <span className="text-sm font-medium" style={{ color: playersById.get(pid)?.color }}>
-                      {playersById.get(pid)?.name}
-                    </span>
-                    <ScoreStepper
-                      value={scores[pid]?.[i] ?? h.par}
-                      par={h.par}
-                      strokes={Math.max(0, received[pid]?.[i] ?? 0)}
-                      onChange={(v) => setScore(pid, i, v)}
-                    />
-                  </div>
-                ))}
+                {(scramble
+                  ? teamIndexes(round).map((t) => round.playerIds.find((p) => teamOf(p) === t)!)
+                  : round.playerIds
+                )
+                  .filter((pid) => (scores[pid]?.length ?? 0) > i)
+                  .map((pid) => (
+                    <div key={pid} className="flex items-center justify-between py-1">
+                      <span className="text-sm font-medium" style={{ color: playersById.get(pid)?.color }}>
+                        {scramble ? teamName(teamOf(pid)) : playersById.get(pid)?.name}
+                      </span>
+                      <ScoreStepper
+                        value={scores[pid][i]}
+                        par={h.par}
+                        strokes={strokesOn ? Math.max(0, received[pid]?.[i] ?? 0) : 0}
+                        onChange={(v) => setScore(pid, i, v)}
+                      />
+                    </div>
+                  ))}
               </div>
             ))}
           </div>
@@ -216,10 +205,11 @@ export function RoundDetailPage() {
                       <tr key={pid} className="border-t border-slate-100">
                         <td className="py-1.5 text-left text-xs font-medium truncate max-w-14" style={{ color: player?.color }}>
                           {player?.name.split(" ")[0]}
+                          {round.mode === "team" && <span className="text-slate-400"> T{teamOf(pid) + 1}</span>}
                         </td>
                         {slice.map((h, i) => {
                           const s = row[start + i];
-                          const dots = Math.max(0, received[pid]?.[start + i] ?? 0);
+                          const dots = strokesOn ? Math.max(0, received[pid]?.[start + i] ?? 0) : 0;
                           return (
                             <td key={h.number}>
                               {s === undefined ? (
@@ -242,8 +232,8 @@ export function RoundDetailPage() {
         )}
         {!editing && (
           <p className="text-[11px] text-slate-400 mt-2">
-            Dots mark holes where a player received handicap strokes. Circles = birdie or better; boxes = bogey
-            or worse.
+            {strokesOn && "Dots mark holes where a player received handicap strokes. "}Circles = birdie or better;
+            boxes = bogey or worse.
           </p>
         )}
       </Card>
