@@ -27,7 +27,7 @@ See the in-app "How handicaps work" page for the formulas and how this differs f
 
 ## Setup
 
-1. Create a **new** Supabase project (don't reuse the CGDisc one).
+1. Use a Supabase project — it can be the same one CGDisc uses (all tables are prefixed `golf_` and nothing existing is touched; accounts are shared between the apps).
 2. Run [`supabase/schema.sql`](supabase/schema.sql) in the SQL editor (safe to re-run; seeds both courses).
 3. Copy `.env.example` to `.env` and fill in the project URL and anon key.
 4. Optionally turn off "Confirm email" in Supabase Auth for a friends-only setup.

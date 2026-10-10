@@ -149,10 +149,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   const loadAll = useCallback(async () => {
     const [c, p, r, s] = await Promise.all([
-      supabase.from("courses").select("*").order("name"),
-      supabase.from("players").select("*").order("created_at"),
-      supabase.from("rounds").select("*").order("date", { ascending: false }),
-      supabase.from("round_scores").select("*"),
+      supabase.from("golf_courses").select("*").order("name"),
+      supabase.from("golf_players").select("*").order("created_at"),
+      supabase.from("golf_rounds").select("*").order("date", { ascending: false }),
+      supabase.from("golf_round_scores").select("*"),
     ]);
     if (c.data) setCourseRows(c.data as CourseRow[]);
     if (p.data) setPlayerRows(p.data as PlayerRow[]);
@@ -167,10 +167,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
     const channel = supabase
       .channel("cggolf-data")
-      .on("postgres_changes", { event: "*", schema: "public", table: "courses" }, loadAll)
-      .on("postgres_changes", { event: "*", schema: "public", table: "players" }, loadAll)
-      .on("postgres_changes", { event: "*", schema: "public", table: "rounds" }, loadAll)
-      .on("postgres_changes", { event: "*", schema: "public", table: "round_scores" }, loadAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "golf_courses" }, loadAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "golf_players" }, loadAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "golf_rounds" }, loadAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "golf_round_scores" }, loadAll)
       .subscribe();
 
     return () => {
@@ -185,7 +185,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
     const addCourse: AppData["addCourse"] = async ({ name, location, holes, tees }) => {
       const { data, error } = await supabase
-        .from("courses")
+        .from("golf_courses")
         .insert({ name, location: location ?? null, holes, tees })
         .select()
         .single();
@@ -200,13 +200,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       if (patch.location !== undefined) dbPatch.location = patch.location ?? null;
       if (patch.holes !== undefined) dbPatch.holes = patch.holes;
       if (patch.tees !== undefined) dbPatch.tees = patch.tees;
-      const { error } = await supabase.from("courses").update(dbPatch).eq("id", id);
+      const { error } = await supabase.from("golf_courses").update(dbPatch).eq("id", id);
       if (error) throw new Error(error.message);
       await loadAll();
     };
 
     const deleteCourse: AppData["deleteCourse"] = async (id) => {
-      const { error } = await supabase.from("courses").delete().eq("id", id);
+      const { error } = await supabase.from("golf_courses").delete().eq("id", id);
       if (error) throw new Error(error.message);
       await loadAll();
     };
@@ -214,7 +214,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     const addPlayer: AppData["addPlayer"] = async (name) => {
       const color = PLAYER_COLORS[playerRows.length % PLAYER_COLORS.length];
       const { data, error } = await supabase
-        .from("players")
+        .from("golf_players")
         .insert({ name, color })
         .select()
         .single();
@@ -228,20 +228,20 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       if (patch.name !== undefined) dbPatch.name = patch.name;
       if (patch.color !== undefined) dbPatch.color = patch.color;
       if ("startingIndex" in patch) dbPatch.starting_index = patch.startingIndex ?? null;
-      const { error } = await supabase.from("players").update(dbPatch).eq("id", id);
+      const { error } = await supabase.from("golf_players").update(dbPatch).eq("id", id);
       if (error) throw new Error(error.message);
       await loadAll();
     };
 
     const deletePlayer: AppData["deletePlayer"] = async (id) => {
-      const { error } = await supabase.from("players").delete().eq("id", id);
+      const { error } = await supabase.from("golf_players").delete().eq("id", id);
       if (error) throw new Error(error.message);
       await loadAll();
     };
 
     const addRound: AppData["addRound"] = async (input) => {
       const { data: roundData, error: roundError } = await supabase
-        .from("rounds")
+        .from("golf_rounds")
         .insert({
           course_id: input.courseId,
           date: input.date,
@@ -260,7 +260,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         strokes: input.scores[playerId] ?? [],
         setup: input.setups[playerId],
       }));
-      const { error: scoresError } = await supabase.from("round_scores").insert(scoreInserts);
+      const { error: scoresError } = await supabase.from("golf_round_scores").insert(scoreInserts);
       if (scoresError) throw new Error(scoresError.message);
 
       await loadAll();
@@ -273,13 +273,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       if (patch.format !== undefined) dbPatch.format = patch.format;
       if (patch.notes !== undefined) dbPatch.notes = patch.notes ?? null;
       if (Object.keys(dbPatch).length > 0) {
-        const { error } = await supabase.from("rounds").update(dbPatch).eq("id", id);
+        const { error } = await supabase.from("golf_rounds").update(dbPatch).eq("id", id);
         if (error) throw new Error(error.message);
       }
       if (patch.scores) {
         for (const [playerId, strokes] of Object.entries(patch.scores)) {
           const { error } = await supabase
-            .from("round_scores")
+            .from("golf_round_scores")
             .update({ strokes })
             .eq("round_id", id)
             .eq("player_id", playerId);
@@ -290,7 +290,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     };
 
     const deleteRound: AppData["deleteRound"] = async (id) => {
-      const { error } = await supabase.from("rounds").delete().eq("id", id);
+      const { error } = await supabase.from("golf_rounds").delete().eq("id", id);
       if (error) throw new Error(error.message);
       await loadAll();
     };

@@ -3,7 +3,10 @@
 -- Run this once in your Supabase project's SQL Editor (Database > SQL Editor > New query).
 -- Safe to re-run: every statement is guarded with "if not exists" / "or replace" / drop-then-create.
 --
--- Use a NEW Supabase project for this app -- don't point it at the CGDisc (disc golf) project.
+-- Safe to run in the SAME Supabase project as CGDisc: every table, function, trigger and
+-- policy here is prefixed golf_ / on_auth_user_created_golf, and nothing existing is
+-- modified. Signed-up accounts are shared between the two apps; each app keeps its own
+-- players, so a friend who signs in to both gets a player row in each.
 --
 -- Trust model: this app is meant for a small group of friends who all trust each other,
 -- not a public multi-tenant app. Any signed-in user can read and write all shared data
@@ -18,7 +21,7 @@
 -- One row per person who can appear in a round: either a real signed-in account
 -- (user_id set, auto-created on signup, see trigger below) or a "guest" player
 -- added by name only (user_id null) for a friend who doesn't want to make an account.
-create table if not exists public.players (
+create table if not exists public.golf_players (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users (id) on delete set null unique,
   name text not null,
@@ -29,10 +32,10 @@ create table if not exists public.players (
   created_at timestamptz not null default now()
 );
 
-alter table public.players
+alter table public.golf_players
   add column if not exists starting_index numeric;
 
-create table if not exists public.courses (
+create table if not exists public.golf_courses (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   location text,
@@ -47,9 +50,9 @@ create table if not exists public.courses (
   created_at timestamptz not null default now()
 );
 
-create table if not exists public.rounds (
+create table if not exists public.golf_rounds (
   id uuid primary key default gen_random_uuid(),
-  course_id uuid not null references public.courses (id) on delete cascade,
+  course_id uuid not null references public.golf_courses (id) on delete cascade,
   date date not null,
   -- Which holes were played: the full 18, or just one nine.
   holes_played text not null default 'all' check (holes_played in ('all', 'front', 'back')),
@@ -57,7 +60,7 @@ create table if not exists public.rounds (
   -- this picks the headline ranking: 'gross', 'net' or 'stableford'.
   format text not null default 'gross' check (format in ('gross', 'net', 'stableford')),
   notes text,
-  created_by uuid references public.players (id) on delete set null,
+  created_by uuid references public.golf_players (id) on delete set null,
   created_at timestamptz not null default now()
 );
 
@@ -66,9 +69,9 @@ create table if not exists public.rounds (
 -- round start so later edits to a course or index never rewrite old rounds:
 --   { "tee": "White", "rating": 68.7, "slope": 127, "useWomenIndex": false,
 --     "playingHandicap": 12 }   (playingHandicap null = no index yet, plays scratch)
-create table if not exists public.round_scores (
-  round_id uuid not null references public.rounds (id) on delete cascade,
-  player_id uuid not null references public.players (id) on delete cascade,
+create table if not exists public.golf_round_scores (
+  round_id uuid not null references public.golf_rounds (id) on delete cascade,
+  player_id uuid not null references public.golf_players (id) on delete cascade,
   strokes jsonb not null,
   setup jsonb not null,
   primary key (round_id, player_id)
@@ -82,7 +85,7 @@ create table if not exists public.round_scores (
 -- exists with this exact name, claim that row instead of creating a
 -- duplicate -- this is how "add a friend by name" reconciles with them
 -- later signing up for their own account, preserving their round history.
-create or replace function public.handle_new_user()
+create or replace function public.golf_handle_new_user()
 returns trigger
 language plpgsql
 security definer set search_path = public
@@ -92,70 +95,77 @@ declare
   existing_guest_id uuid;
 begin
   select id into existing_guest_id
-  from public.players
+  from public.golf_players
   where user_id is null
     and lower(trim(name)) = lower(trim(new_name))
   order by created_at
   limit 1;
 
   if existing_guest_id is not null then
-    update public.players set user_id = new.id where id = existing_guest_id;
+    update public.golf_players set user_id = new.id where id = existing_guest_id;
   else
-    insert into public.players (user_id, name) values (new.id, new_name);
+    insert into public.golf_players (user_id, name) values (new.id, new_name);
   end if;
 
   return new;
 end;
 $$;
 
-drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created
+drop trigger if exists on_auth_user_created_golf on auth.users;
+create trigger on_auth_user_created_golf
   after insert on auth.users
-  for each row execute procedure public.handle_new_user();
+  for each row execute procedure public.golf_handle_new_user();
+
+-- Existing accounts (e.g. CGDisc users who signed up before this schema was
+-- installed) get a golf player row too. Safe to re-run.
+insert into public.golf_players (user_id, name)
+select u.id, coalesce(u.raw_user_meta_data ->> 'display_name', split_part(u.email, '@', 1))
+from auth.users u
+where not exists (select 1 from public.golf_players p where p.user_id = u.id);
 
 -- ---------------------------------------------------------------------------
 -- Row Level Security: any signed-in user can read/write all shared data
 -- ---------------------------------------------------------------------------
 
-alter table public.players enable row level security;
-alter table public.courses enable row level security;
-alter table public.rounds enable row level security;
-alter table public.round_scores enable row level security;
+alter table public.golf_players enable row level security;
+alter table public.golf_courses enable row level security;
+alter table public.golf_rounds enable row level security;
+alter table public.golf_round_scores enable row level security;
 
 -- Note: this app does not use Supabase anonymous sign-ins, so `to authenticated`
 -- alone (no per-row ownership check) is sufficient to mean "any real signed-in
 -- user of this app" -- matching the shared-trust model described above.
 
-drop policy if exists "authenticated read players" on public.players;
-create policy "authenticated read players" on public.players for select
+drop policy if exists "golf read players" on public.golf_players;
+create policy "golf read players" on public.golf_players for select
   to authenticated using (true);
 
-drop policy if exists "authenticated write players" on public.players;
-create policy "authenticated write players" on public.players for all
+drop policy if exists "golf write players" on public.golf_players;
+create policy "golf write players" on public.golf_players for all
   to authenticated using (true) with check (true);
 
-drop policy if exists "authenticated read courses" on public.courses;
-create policy "authenticated read courses" on public.courses for select
+drop policy if exists "golf read courses" on public.golf_courses;
+create policy "golf read courses" on public.golf_courses for select
   to authenticated using (true);
 
-drop policy if exists "authenticated write courses" on public.courses;
-create policy "authenticated write courses" on public.courses for all
+drop policy if exists "golf write courses" on public.golf_courses;
+create policy "golf write courses" on public.golf_courses for all
   to authenticated using (true) with check (true);
 
-drop policy if exists "authenticated read rounds" on public.rounds;
-create policy "authenticated read rounds" on public.rounds for select
+drop policy if exists "golf read rounds" on public.golf_rounds;
+create policy "golf read rounds" on public.golf_rounds for select
   to authenticated using (true);
 
-drop policy if exists "authenticated write rounds" on public.rounds;
-create policy "authenticated write rounds" on public.rounds for all
+drop policy if exists "golf write rounds" on public.golf_rounds;
+create policy "golf write rounds" on public.golf_rounds for all
   to authenticated using (true) with check (true);
 
-drop policy if exists "authenticated read round_scores" on public.round_scores;
-create policy "authenticated read round_scores" on public.round_scores for select
+drop policy if exists "golf read round_scores" on public.golf_round_scores;
+create policy "golf read round_scores" on public.golf_round_scores for select
   to authenticated using (true);
 
-drop policy if exists "authenticated write round_scores" on public.round_scores;
-create policy "authenticated write round_scores" on public.round_scores for all
+drop policy if exists "golf write round_scores" on public.golf_round_scores;
+create policy "golf write round_scores" on public.golf_round_scores for all
   to authenticated using (true) with check (true);
 
 -- ---------------------------------------------------------------------------
@@ -166,7 +176,7 @@ do $$
 declare
   t text;
 begin
-  foreach t in array array['players', 'courses', 'rounds', 'round_scores'] loop
+  foreach t in array array['golf_players', 'golf_courses', 'golf_rounds', 'golf_round_scores'] loop
     if not exists (
       select 1 from pg_publication_tables
       where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t
@@ -188,7 +198,7 @@ end $$;
 -- ratings are published inconsistently across sites, so check them against
 -- the physical scorecard and fix them in the app (Courses > course > Edit)
 -- if they differ.
-insert into public.courses (name, location, holes, tees)
+insert into public.golf_courses (name, location, holes, tees)
 select * from (values
   (
     'Bent Creek Golf Course',
@@ -204,5 +214,5 @@ select * from (values
   )
 ) as seed(name, location, holes, tees)
 where not exists (
-  select 1 from public.courses c where c.name = seed.name
+  select 1 from public.golf_courses c where c.name = seed.name
 );
