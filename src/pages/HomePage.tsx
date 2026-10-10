@@ -96,7 +96,7 @@ export function HomePage() {
                 <div className="text-right">
                   <div className="font-semibold tabular-nums">{formatIndex(idx.current)}</div>
                   <div className="text-[11px] text-slate-400">
-                    {idx.fromStarting ? "starting index" : `${idx.rounds} round${idx.rounds === 1 ? "" : "s"}`}
+                    {`${idx.rounds} round${idx.rounds === 1 ? "" : "s"}`}
                   </div>
                 </div>
               </li>

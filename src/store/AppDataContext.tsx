@@ -49,7 +49,6 @@ interface PlayerRow {
   user_id: string | null;
   name: string;
   color: string;
-  starting_index: number | null;
   created_at: string;
 }
 
@@ -95,7 +94,6 @@ function mapPlayer(row: PlayerRow, selfUserId: string | undefined): Player {
     color: row.color,
     isSelf: Boolean(selfUserId) && row.user_id === selfUserId,
     hasAccount: row.user_id !== null,
-    startingIndex: row.starting_index ?? undefined,
     createdAt: row.created_at,
   };
 }
@@ -274,7 +272,6 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       const dbPatch: Record<string, unknown> = {};
       if (patch.name !== undefined) dbPatch.name = patch.name;
       if (patch.color !== undefined) dbPatch.color = patch.color;
-      if ("startingIndex" in patch) dbPatch.starting_index = patch.startingIndex ?? null;
       const { error } = await supabase.from("golf_players").update(dbPatch).eq("id", id);
       if (error) throw new Error(error.message);
       await loadAll();

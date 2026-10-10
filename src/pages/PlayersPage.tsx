@@ -4,34 +4,6 @@ import { useAppData } from "../store/AppDataContext";
 import { playerIndex } from "../lib/players";
 import { formatIndex } from "../lib/golf";
 import { Button, Card, EmptyState, Field, PageHeader, inputClass } from "../components/ui";
-import type { Player } from "../types";
-
-function StartingIndexEditor({ player }: { player: Player }) {
-  const { updatePlayer } = useAppData();
-  const [value, setValue] = useState(player.startingIndex === undefined ? "" : String(player.startingIndex));
-
-  async function commit() {
-    const trimmed = value.trim();
-    const n = trimmed === "" ? undefined : Number(trimmed.replace(/^\+/, "-"));
-    if (n !== undefined && !Number.isFinite(n)) return;
-    if (n === player.startingIndex) return;
-    await updatePlayer(player.id, { startingIndex: n });
-  }
-
-  return (
-    <label className="flex items-center gap-2 text-xs text-slate-500 mt-2">
-      Starting index
-      <input
-        inputMode="decimal"
-        className="w-20 rounded-lg border border-slate-300 px-2 py-1 text-base text-slate-900"
-        placeholder="e.g. 14.2"
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onBlur={() => void commit()}
-      />
-    </label>
-  );
-}
 
 export function PlayersPage() {
   const { players, rounds, coursesById, addPlayer, deletePlayer } = useAppData();
@@ -90,9 +62,7 @@ export function PlayersPage() {
                       <p className="text-xs text-slate-400">
                         Index {formatIndex(idx.current)}
                         {idx.calculated === null &&
-                          (idx.fromStarting
-                            ? " (starting index)"
-                            : ` — needs 3+ rated 18-hole rounds (${idx.rounds} so far)`)}
+                          ` — needs 3+ rated 18-hole rounds (${idx.rounds} so far)`}
                       </p>
                     </div>
                   </div>
@@ -113,7 +83,6 @@ export function PlayersPage() {
                     )}
                   </div>
                 </div>
-                <StartingIndexEditor player={player} />
               </Card>
             );
           })}

@@ -42,7 +42,6 @@ export interface Player {
    * Handicap index to use until the app has enough rounds (3+ rated 18-hole
    * rounds) to calculate one -- e.g. an index from the player's GHIN card.
    */
-  startingIndex?: number;
   createdAt: string;
 }
 

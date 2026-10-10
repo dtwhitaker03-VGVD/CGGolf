@@ -244,17 +244,6 @@ export function formatIndex(index: number | null | undefined): string {
   return index < 0 ? `+${Math.abs(index).toFixed(1)}` : index.toFixed(1);
 }
 
-/**
- * The index to use for a player right now: the calculated one if they have
- * enough rounds, otherwise their manually entered starting index (if any).
- */
-export function effectiveIndex(
-  calculated: number | null,
-  startingIndex: number | undefined,
-): number | null {
-  return calculated ?? startingIndex ?? null;
-}
-
 // ---------------------------------------------------------------------------
 // Per-hole result classification
 // ---------------------------------------------------------------------------

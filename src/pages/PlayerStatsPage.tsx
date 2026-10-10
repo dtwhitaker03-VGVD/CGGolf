@@ -109,9 +109,7 @@ export function PlayerStatsPage() {
           <p className="text-[11px] text-slate-400 mt-0.5">
             {idx.calculated !== null
               ? `Best of ${Math.min(idx.rounds, 20)} recent rounds`
-              : idx.fromStarting
-                ? "Starting index"
-                : `${idx.rounds} of 3 rounds needed`}
+              : `${idx.rounds} of 3 rounds needed`}
           </p>
         </Card>
         <Card>
