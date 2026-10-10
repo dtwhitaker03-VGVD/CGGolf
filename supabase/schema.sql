@@ -212,11 +212,10 @@ end $$;
 
 -- Sources: Bent Creek -- GolfPass scorecard (tee ratings/slopes, hole
 -- yardages, men's and women's stroke indexes). Cape Jaycee -- City of Cape
--- Girardeau scorecard PDF for yardages and stroke indexes; White/Red
--- rating+slope from the city's Jaycee Golf page; Gold from the PDF. Course
--- ratings are published inconsistently across sites, so check them against
--- the physical scorecard and fix them in the app (Courses > course > Edit)
--- if they differ.
+-- Girardeau scorecard PDF for yardages, stroke indexes and tee ratings (these
+-- match the printed paper scorecard: White 67.6/118, Gold 63.2/103, Red
+-- 65.7/107; the city's web page lists older numbers). Fix anything that
+-- differs in the app (Courses > course > Edit).
 insert into public.golf_courses (name, location, holes, tees)
 select * from (values
   (
@@ -229,7 +228,7 @@ select * from (values
     'Cape Jaycee Municipal Golf Course',
     'Cape Girardeau, MO',
     '[{"number":1,"par":4,"strokeIndex":5,"strokeIndexW":3},{"number":2,"par":5,"strokeIndex":7,"strokeIndexW":7},{"number":3,"par":3,"strokeIndex":15,"strokeIndexW":13},{"number":4,"par":4,"strokeIndex":17,"strokeIndexW":9},{"number":5,"par":4,"strokeIndex":1,"strokeIndexW":1},{"number":6,"par":3,"strokeIndex":11,"strokeIndexW":15},{"number":7,"par":4,"strokeIndex":9,"strokeIndexW":5},{"number":8,"par":3,"strokeIndex":13,"strokeIndexW":17},{"number":9,"par":4,"strokeIndex":3,"strokeIndexW":11},{"number":10,"par":4,"strokeIndex":10,"strokeIndexW":12},{"number":11,"par":5,"strokeIndex":8,"strokeIndexW":10},{"number":12,"par":3,"strokeIndex":12,"strokeIndexW":14},{"number":13,"par":4,"strokeIndex":18,"strokeIndexW":16},{"number":14,"par":4,"strokeIndex":16,"strokeIndexW":8},{"number":15,"par":5,"strokeIndex":4,"strokeIndexW":2},{"number":16,"par":4,"strokeIndex":6,"strokeIndexW":6},{"number":17,"par":4,"strokeIndex":2,"strokeIndexW":4},{"number":18,"par":3,"strokeIndex":14,"strokeIndexW":18}]'::jsonb,
-    '[{"name":"White","color":"#e5e7eb","rating":67.0,"slope":108,"yards":[339,552,147,321,334,211,282,185,388,301,479,169,298,288,558,392,396,183]},{"name":"Gold","color":"#eab308","rating":63.2,"slope":103,"yards":[322,405,132,280,328,167,261,155,296,207,362,120,235,218,472,318,375,123]},{"name":"Red","color":"#dc2626","rating":61.4,"slope":93,"useWomenIndex":true,"yards":[306,381,132,255,312,167,261,134,296,207,340,120,197,218,405,260,334,118]}]'::jsonb
+    '[{"name":"White","color":"#e5e7eb","rating":67.6,"slope":118,"yards":[339,552,147,321,334,211,282,185,388,301,479,169,298,288,558,392,396,183]},{"name":"Gold","color":"#eab308","rating":63.2,"slope":103,"yards":[322,405,132,280,328,167,261,155,296,207,362,120,235,218,472,318,375,123]},{"name":"Red","color":"#dc2626","rating":65.7,"slope":107,"useWomenIndex":true,"yards":[306,381,132,255,312,167,261,134,296,207,340,120,197,218,405,260,334,118]}]'::jsonb
   )
 ) as seed(name, location, holes, tees)
 where not exists (
