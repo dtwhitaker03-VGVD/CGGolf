@@ -404,8 +404,9 @@ export function NewRoundPage() {
   const onSummary = hole >= holes.length;
   const h = holes[Math.min(hole, holes.length - 1)];
 
-  // Standings through the holes already scored.
-  const through = Math.min(reached, holes.length);
+  // Live standings: every hole up to the one being scored counts, so the
+  // leaderboard updates as scores are tapped in.
+  const through = onSummary ? holes.length : Math.min(Math.max(reached, hole + 1), holes.length);
   const standings = selected
     .map((pid) => {
       const gross = scores[pid].slice(0, through);
@@ -419,21 +420,57 @@ export function NewRoundPage() {
       format === "stableford" ? b.pts - a.pts : format === "net" ? a.net - b.net : a.gross - b.gross,
     );
 
-  function standingText(s: (typeof standings)[number]): string {
-    if (format === "stableford") return `${s.pts} pts`;
-    return formatVsPar(format === "net" ? s.netVsPar : s.vsPar);
-  }
-
   function goTo(next: number) {
     setHole(next);
     setReached((r) => Math.max(r, Math.min(next, holes.length)));
   }
 
+  const leaderboard = (
+    <Card className="mb-3 mt-3">
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">
+        Leaderboard · {formatLabel(format)}
+        {through < holes.length && ` · thru ${through}`}
+      </p>
+      <div className="space-y-1.5">
+        {standings.map((s, i) => {
+          const p = players.find((x) => x.id === s.pid);
+          if (!p) return null;
+          return (
+            <div key={s.pid} className="flex items-center justify-between text-sm">
+              <span className="flex items-center gap-2">
+                <span className="text-slate-400 w-4">{i + 1}</span>
+                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: p.color }} />
+                <span className="font-medium text-slate-800">{p.name}</span>
+              </span>
+              <span className="tabular-nums text-slate-500">
+                {format === "stableford" ? (
+                  <>
+                    {s.gross} ({formatVsPar(s.vsPar)}) ·{" "}
+                    <span className="font-semibold text-slate-900">{s.pts} pts</span>
+                  </>
+                ) : format === "net" ? (
+                  <>
+                    {s.gross} ({formatVsPar(s.vsPar)}) ·{" "}
+                    <span className="font-semibold text-slate-900">{formatVsPar(s.netVsPar)}</span>
+                  </>
+                ) : (
+                  <span className="font-semibold text-slate-900">
+                    {s.gross} ({formatVsPar(s.vsPar)})
+                  </span>
+                )}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </Card>
+  );
+
   return (
     <div>
       <PageHeader
-        title={onSummary ? "Review" : `Hole ${h.number}`}
-        subtitle={`${course.name} · ${roundHolesLabel(holesPlayed)} · par ${par} · ${formatLabel(format)}`}
+        title="New round"
+        subtitle={`${course.name} · ${roundHolesLabel(holesPlayed)} · par ${par}`}
         action={
           <button type="button" className="text-xs text-slate-400 underline" onClick={cancel}>
             Cancel
@@ -441,31 +478,34 @@ export function NewRoundPage() {
         }
       />
 
-      {through > 0 && (
-        <div className="flex gap-2 overflow-x-auto mb-3 pb-1">
-          {standings.map((s, i) => {
-            const p = players.find((x) => x.id === s.pid);
-            return (
-              <div key={s.pid} className="shrink-0 rounded-xl bg-white border border-slate-200 px-3 py-1.5 text-sm">
-                <span className="text-slate-400 mr-1">{i + 1}</span>
-                <span className="font-medium" style={{ color: p?.color }}>
-                  {p?.name}
-                </span>{" "}
-                <span className="tabular-nums font-semibold">{standingText(s)}</span>
-              </div>
-            );
-          })}
-        </div>
-      )}
+      <div className="flex gap-2 overflow-x-auto pb-2 mb-3 -mx-4 px-4">
+        {holes.map((x, i) => (
+          <button
+            key={x.number}
+            type="button"
+            ref={
+              i === hole
+                ? (el) => el?.scrollIntoView({ inline: "center", block: "nearest" })
+                : undefined
+            }
+            onClick={() => goTo(i)}
+            className={`shrink-0 w-9 h-9 rounded-full text-sm font-semibold ${
+              i === hole ? "bg-green-700 text-white" : "bg-slate-100 text-slate-700"
+            }`}
+          >
+            {x.number}
+          </button>
+        ))}
+      </div>
 
       {!onSummary ? (
         <>
           <Card className="mb-3">
             <div className="flex items-end justify-between mb-3">
               <div>
-                <p className="text-3xl font-bold text-slate-900 leading-none">Par {h.par}</p>
-                <p className="text-xs text-slate-400 mt-1">
-                  Hole handicap {h.strokeIndex}
+                <p className="text-3xl font-bold text-slate-900 leading-none">Hole {h.number}</p>
+                <p className="text-sm text-slate-500 mt-1">
+                  Par {h.par} · hole handicap {h.strokeIndex}
                   {h.strokeIndexW !== undefined && h.strokeIndexW !== h.strokeIndex && ` (W ${h.strokeIndexW})`}
                 </p>
               </div>
@@ -511,33 +551,20 @@ export function NewRoundPage() {
             </div>
           </Card>
 
-          <div className="flex gap-1 flex-wrap justify-center mb-3">
-            {holes.map((x, i) => (
-              <button
-                key={x.number}
-                type="button"
-                onClick={() => goTo(i)}
-                className={`w-7 h-7 rounded-full text-xs font-semibold ${
-                  i === hole
-                    ? "bg-green-700 text-white"
-                    : i < reached
-                      ? "bg-green-100 text-green-800"
-                      : "bg-slate-100 text-slate-500"
-                }`}
-              >
-                {x.number}
-              </button>
-            ))}
-          </div>
-
           <div className="flex gap-2">
-            <Button variant="secondary" disabled={hole === 0} onClick={() => setHole(hole - 1)}>
-              ← Prev
+            <Button
+              variant="secondary"
+              className="flex-1"
+              onClick={() => (hole === 0 ? setStep(2) : setHole(hole - 1))}
+            >
+              {hole === 0 ? "Back" : "Previous hole"}
             </Button>
             <Button className="flex-1" onClick={() => goTo(isLast ? holes.length : hole + 1)}>
-              {isLast ? "Review round" : "Next hole →"}
+              {isLast ? "Finish" : "Next hole"}
             </Button>
           </div>
+
+          {leaderboard}
         </>
       ) : (
         <>
@@ -571,20 +598,8 @@ export function NewRoundPage() {
             </table>
           </Card>
           <p className="text-xs text-slate-400 mb-3">
-            Tap a hole number below to fix a score before saving.
+            Tap a hole number above to fix a score before saving.
           </p>
-          <div className="flex gap-1 flex-wrap justify-center mb-4">
-            {holes.map((x, i) => (
-              <button
-                key={x.number}
-                type="button"
-                onClick={() => setHole(i)}
-                className="w-7 h-7 rounded-full text-xs font-semibold bg-green-100 text-green-800"
-              >
-                {x.number}
-              </button>
-            ))}
-          </div>
           {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
           <div className="flex gap-2">
             <Button variant="secondary" onClick={() => setHole(holes.length - 1)}>
