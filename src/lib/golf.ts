@@ -288,3 +288,8 @@ export function tallyHole(strokes: number, par: number, counts: HoleCounts): voi
   else if (diff === 2) counts.doubleBogeys += 1;
   else counts.triplePlus += 1;
 }
+
+/** A round's date for display; rounds imported from an undated scorecard have none. */
+export function formatRoundDate(date: string): string {
+  return date || "No date";
+}

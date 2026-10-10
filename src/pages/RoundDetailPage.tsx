@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAppData } from "../store/AppDataContext";
-import { findTee, formatVsPar, playedHoles, playerResult, setupStrokes, totalScore } from "../lib/golf";
+import { findTee, formatRoundDate, formatVsPar, playedHoles, playerResult, setupStrokes, totalScore } from "../lib/golf";
 import {
   appliesStrokes,
   isScramble,
@@ -79,7 +79,7 @@ export function RoundDetailPage() {
     <div>
       <PageHeader
         title={course.name}
-        subtitle={`${round.date} · ${roundTags(round)}`}
+        subtitle={`${formatRoundDate(round.date)} · ${roundTags(round)}`}
         action={
           <button
             type="button"

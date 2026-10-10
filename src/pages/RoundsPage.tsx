@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useAppData } from "../store/AppDataContext";
 import { Card, EmptyState, LinkButton, PageHeader } from "../components/ui";
 import { RoundSummary, roundTags } from "../components/RoundSummary";
+import { formatRoundDate } from "../lib/golf";
 
 export function RoundsPage() {
   const { rounds, coursesById, playersById } = useAppData();
@@ -27,7 +28,7 @@ export function RoundsPage() {
                 <Card>
                   <div className="flex items-center justify-between mb-1">
                     <p className="font-semibold text-slate-900">{course.name}</p>
-                    <p className="text-sm text-slate-400">{round.date}</p>
+                    <p className="text-sm text-slate-400">{formatRoundDate(round.date)}</p>
                   </div>
                   <p className="text-xs text-slate-400 mb-1.5">{roundTags(round)}</p>
                   <RoundSummary round={round} course={course} playersById={playersById} />

@@ -53,7 +53,8 @@ create table if not exists public.golf_courses (
 create table if not exists public.golf_rounds (
   id uuid primary key default gen_random_uuid(),
   course_id uuid not null references public.golf_courses (id) on delete cascade,
-  date date not null,
+  -- Null for rounds imported from a paper scorecard that had no date written on it.
+  date date,
   -- Which holes were played: the full 18, or just one nine.
   holes_played text not null default 'all' check (holes_played in ('all', 'front', 'back')),
   -- LEGACY: superseded by mode + scoring below (kept so older databases don't need a destructive migration).
@@ -62,6 +63,8 @@ create table if not exists public.golf_rounds (
   created_by uuid references public.golf_players (id) on delete set null,
   created_at timestamptz not null default now()
 );
+
+alter table public.golf_rounds alter column date drop not null;
 
 -- Round type and scoring. Added after the first release, so these are alter statements
 -- (safe to re-run) rather than part of the create table above.
@@ -228,7 +231,7 @@ select * from (values
     'Cape Jaycee Municipal Golf Course',
     'Cape Girardeau, MO',
     '[{"number":1,"par":4,"strokeIndex":5,"strokeIndexW":3},{"number":2,"par":5,"strokeIndex":7,"strokeIndexW":7},{"number":3,"par":3,"strokeIndex":15,"strokeIndexW":13},{"number":4,"par":4,"strokeIndex":17,"strokeIndexW":9},{"number":5,"par":4,"strokeIndex":1,"strokeIndexW":1},{"number":6,"par":3,"strokeIndex":11,"strokeIndexW":15},{"number":7,"par":4,"strokeIndex":9,"strokeIndexW":5},{"number":8,"par":3,"strokeIndex":13,"strokeIndexW":17},{"number":9,"par":4,"strokeIndex":3,"strokeIndexW":11},{"number":10,"par":4,"strokeIndex":10,"strokeIndexW":12},{"number":11,"par":5,"strokeIndex":8,"strokeIndexW":10},{"number":12,"par":3,"strokeIndex":12,"strokeIndexW":14},{"number":13,"par":4,"strokeIndex":18,"strokeIndexW":16},{"number":14,"par":4,"strokeIndex":16,"strokeIndexW":8},{"number":15,"par":5,"strokeIndex":4,"strokeIndexW":2},{"number":16,"par":4,"strokeIndex":6,"strokeIndexW":6},{"number":17,"par":4,"strokeIndex":2,"strokeIndexW":4},{"number":18,"par":3,"strokeIndex":14,"strokeIndexW":18}]'::jsonb,
-    '[{"name":"White","color":"#e5e7eb","rating":67.6,"slope":118,"yards":[339,552,147,321,334,211,282,185,388,301,479,169,298,288,558,392,396,183]},{"name":"Gold","color":"#eab308","rating":63.2,"slope":103,"yards":[322,405,132,280,328,167,261,155,296,207,362,120,235,218,472,318,375,123]},{"name":"Red","color":"#dc2626","rating":65.7,"slope":107,"useWomenIndex":true,"yards":[306,381,132,255,312,167,261,134,296,207,340,120,197,218,405,260,334,118]}]'::jsonb
+    '[{"name":"White","color":"#e5e7eb","rating":67.6,"slope":118,"yards":[339,552,147,321,334,211,282,185,388,301,425,169,298,288,558,392,396,183]},{"name":"Gold","color":"#eab308","rating":63.2,"slope":103,"yards":[322,405,137,290,328,175,271,158,300,207,350,125,283,120,472,318,375,123]},{"name":"Red","color":"#dc2626","rating":65.7,"slope":107,"useWomenIndex":true,"yards":[306,381,132,255,312,167,261,134,296,207,345,120,197,218,405,260,334,118]}]'::jsonb
   )
 ) as seed(name, location, holes, tees)
 where not exists (

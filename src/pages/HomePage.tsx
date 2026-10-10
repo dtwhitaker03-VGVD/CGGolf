@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useAppData } from "../store/AppDataContext";
 import { useAuth } from "../store/AuthContext";
 import { playerIndex } from "../lib/players";
-import { formatIndex } from "../lib/golf";
+import { formatIndex, formatRoundDate } from "../lib/golf";
 import { Card, EmptyState, LinkButton, PageHeader } from "../components/ui";
 import { IosInstallHint } from "../components/IosInstallHint";
 import { RoundSummary, roundTags } from "../components/RoundSummary";
@@ -58,7 +58,7 @@ export function HomePage() {
           </p>
           <Link to={`/round/${lastRound.id}`} className="block">
             <p className="font-semibold text-slate-900">{lastCourse.name}</p>
-            <p className="text-sm text-slate-500">{lastRound.date}</p>
+            <p className="text-sm text-slate-500">{formatRoundDate(lastRound.date)}</p>
             <p className="text-xs text-slate-400 mb-1.5">{roundTags(lastRound)}</p>
             <RoundSummary round={lastRound} course={lastCourse} playersById={playersById} />
           </Link>

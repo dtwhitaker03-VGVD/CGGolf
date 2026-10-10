@@ -55,7 +55,8 @@ interface PlayerRow {
 interface RoundRow {
   id: string;
   course_id: string;
-  date: string;
+  /** Null for imported rounds whose paper scorecard had no date. */
+  date: string | null;
   holes_played: RoundHoles;
   mode: RoundMode;
   scoring: ScoringMethod;
@@ -109,7 +110,8 @@ function mapRounds(roundRows: RoundRow[], scoreRows: RoundScoreRow[]): Round[] {
     return {
       id: r.id,
       courseId: r.course_id,
-      date: r.date,
+      // Undated rounds use an empty string, which sorts before every real date.
+      date: r.date ?? "",
       holes: r.holes_played,
       mode: r.mode,
       scoring: r.scoring,
@@ -286,7 +288,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         .from("golf_rounds")
         .insert({
           course_id: input.courseId,
-          date: input.date,
+          date: input.date || null,
           holes_played: input.holes,
           mode: input.mode,
           scoring: input.scoring,
@@ -316,7 +318,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
     const updateRound: AppData["updateRound"] = async (id, patch) => {
       const dbPatch: Record<string, unknown> = {};
-      if (patch.date !== undefined) dbPatch.date = patch.date;
+      if (patch.date !== undefined) dbPatch.date = patch.date || null;
       if (patch.notes !== undefined) dbPatch.notes = patch.notes ?? null;
       if (Object.keys(dbPatch).length > 0) {
         const { error } = await supabase.from("golf_rounds").update(dbPatch).eq("id", id);
