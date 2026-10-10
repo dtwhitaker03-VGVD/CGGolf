@@ -530,20 +530,23 @@ export function NewRoundPage() {
           </p>
         </Card>
 
-        {selected.length >= 2 && (
+        {(
           <Card className="mb-4">
             <p className="text-sm font-medium text-slate-700 mb-2">Round type</p>
             <div className="flex gap-2 mb-2 flex-wrap">
               <Pill active={mode === "straight"} onClick={() => setMode("straight")}>
                 Straight up
               </Pill>
-              <Pill active={mode === "handicap"} onClick={() => setMode("handicap")}>
+              <Pill disabled={selected.length < 2} active={mode === "handicap"} onClick={() => setMode("handicap")}>
                 Handicapped
               </Pill>
-              <Pill active={mode === "team"} onClick={() => setMode("team")}>
+              <Pill disabled={selected.length < 2} active={mode === "team"} onClick={() => setMode("team")}>
                 Team
               </Pill>
             </div>
+            {selected.length < 2 && (
+              <p className="text-xs text-slate-400 mb-2">Check at least two players above to play Handicapped or Team.</p>
+            )}
 
             {mode === "straight" && (
               <p className="text-xs text-slate-400 mb-3">

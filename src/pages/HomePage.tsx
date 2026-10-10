@@ -113,6 +113,8 @@ export function HomePage() {
         </p>
       )}
 
+      <p className="text-center text-[11px] text-slate-300 mt-8">Build {__APP_BUILD__}</p>
+
       {courses.length === 0 && (
         <p className="text-center text-sm text-slate-400 mt-6">
           Tip: add your local courses first so rounds are quick to log.
