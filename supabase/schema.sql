@@ -250,3 +250,32 @@ select * from (values
 where not exists (
   select 1 from public.golf_courses c where c.name = seed.name
 );
+
+
+-- Wagers between two players on a round, and payments that settle them up.
+-- Results are never stored: they're worked out from the round's scores.
+create table if not exists public.golf_bets (
+  id uuid primary key default gen_random_uuid(),
+  round_id uuid not null references public.golf_rounds (id) on delete cascade,
+  type text not null check (type in ('straight','spread','overunder')),
+  fav_id uuid not null references public.golf_players (id) on delete cascade,
+  dog_id uuid not null references public.golf_players (id) on delete cascade,
+  line numeric,
+  side text check (side in ('under','over')),
+  stake numeric not null check (stake > 0),
+  fav_odds numeric not null default 1 check (fav_odds >= 1),
+  created_at timestamptz not null default now()
+);
+create table if not exists public.golf_payments (
+  id uuid primary key default gen_random_uuid(),
+  from_id uuid not null references public.golf_players (id) on delete cascade,
+  to_id uuid not null references public.golf_players (id) on delete cascade,
+  amount numeric not null check (amount > 0),
+  note text,
+  created_at timestamptz not null default now()
+);
+alter table public.golf_bets enable row level security;
+alter table public.golf_payments enable row level security;
+create policy "golf_bets all authenticated" on public.golf_bets for all to authenticated using (true) with check (true);
+create policy "golf_payments all authenticated" on public.golf_payments for all to authenticated using (true) with check (true);
+alter publication supabase_realtime add table public.golf_bets, public.golf_payments;

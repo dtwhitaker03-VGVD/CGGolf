@@ -11,7 +11,10 @@ import type { User } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "./AuthContext";
 import type {
+  Bet,
   Course,
+  NewBet,
+  Payment,
   Hole,
   Player,
   PlayerSetup,
@@ -154,11 +157,58 @@ async function ensureSelfPlayer(user: User): Promise<void> {
   }
 }
 
+interface BetRow {
+  id: string;
+  round_id: string;
+  type: Bet["type"];
+  fav_id: string;
+  dog_id: string;
+  line: number | null;
+  side: "under" | "over" | null;
+  stake: number;
+  fav_odds: number;
+}
+interface PaymentRow {
+  id: string;
+  from_id: string;
+  to_id: string;
+  amount: number;
+  note: string | null;
+  created_at: string;
+}
+
+const mapBet = (r: BetRow): Bet => ({
+  id: r.id,
+  roundId: r.round_id,
+  type: r.type,
+  favId: r.fav_id,
+  dogId: r.dog_id,
+  line: r.line === null ? undefined : Number(r.line),
+  side: r.side ?? undefined,
+  stake: Number(r.stake),
+  favOdds: Number(r.fav_odds),
+});
+const mapPayment = (r: PaymentRow): Payment => ({
+  id: r.id,
+  fromId: r.from_id,
+  toId: r.to_id,
+  amount: Number(r.amount),
+  note: r.note ?? undefined,
+  createdAt: r.created_at,
+});
+
 interface AppData {
   courses: Course[];
   players: Player[];
   rounds: Round[];
+  bets: Bet[];
+  payments: Payment[];
   loading: boolean;
+
+  addBet: (roundId: string, bet: NewBet) => Promise<void>;
+  deleteBet: (id: string) => Promise<void>;
+  addPayment: (p: { fromId: string; toId: string; amount: number; note?: string }) => Promise<void>;
+  deletePayment: (id: string) => Promise<void>;
 
   addCourse: (input: { name: string; location?: string; holes: Hole[]; tees: Tee[] }) => Promise<Course>;
   updateCourse: (id: string, patch: Partial<Omit<Course, "id" | "createdAt">>) => Promise<void>;
@@ -186,19 +236,25 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [playerRows, setPlayerRows] = useState<PlayerRow[]>([]);
   const [roundRows, setRoundRows] = useState<RoundRow[]>([]);
   const [scoreRows, setScoreRows] = useState<RoundScoreRow[]>([]);
+  const [betRows, setBetRows] = useState<BetRow[]>([]);
+  const [paymentRows, setPaymentRows] = useState<PaymentRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadAll = useCallback(async () => {
-    const [c, p, r, s] = await Promise.all([
+    const [c, p, r, s, b, pay] = await Promise.all([
       supabase.from("golf_courses").select("*").order("name"),
       supabase.from("golf_players").select("*").order("created_at"),
       supabase.from("golf_rounds").select("*").order("date", { ascending: false }),
       supabase.from("golf_round_scores").select("*"),
+      supabase.from("golf_bets").select("*"),
+      supabase.from("golf_payments").select("*").order("created_at"),
     ]);
     if (c.data) setCourseRows(c.data as CourseRow[]);
     if (p.data) setPlayerRows(p.data as PlayerRow[]);
     if (r.data) setRoundRows(r.data as RoundRow[]);
     if (s.data) setScoreRows(s.data as RoundScoreRow[]);
+    if (b.data) setBetRows(b.data as BetRow[]);
+    if (pay.data) setPaymentRows(pay.data as PaymentRow[]);
     setLoading(false);
   }, []);
 
@@ -215,6 +271,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       .on("postgres_changes", { event: "*", schema: "public", table: "golf_players" }, loadAll)
       .on("postgres_changes", { event: "*", schema: "public", table: "golf_rounds" }, loadAll)
       .on("postgres_changes", { event: "*", schema: "public", table: "golf_round_scores" }, loadAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "golf_bets" }, loadAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "golf_payments" }, loadAll)
       .subscribe();
 
     return () => {
@@ -343,10 +401,48 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       await loadAll();
     };
 
+    const addBet: AppData["addBet"] = async (roundId, bet) => {
+      const { error } = await supabase.from("golf_bets").insert({
+        round_id: roundId,
+        type: bet.type,
+        fav_id: bet.favId,
+        dog_id: bet.dogId,
+        line: bet.line ?? null,
+        side: bet.side ?? null,
+        stake: bet.stake,
+        fav_odds: bet.favOdds,
+      });
+      if (error) throw new Error(error.message);
+      await loadAll();
+    };
+    const deleteBet: AppData["deleteBet"] = async (id) => {
+      const { error } = await supabase.from("golf_bets").delete().eq("id", id);
+      if (error) throw new Error(error.message);
+      await loadAll();
+    };
+    const addPayment: AppData["addPayment"] = async ({ fromId, toId, amount, note }) => {
+      const { error } = await supabase
+        .from("golf_payments")
+        .insert({ from_id: fromId, to_id: toId, amount, note: note ?? null });
+      if (error) throw new Error(error.message);
+      await loadAll();
+    };
+    const deletePayment: AppData["deletePayment"] = async (id) => {
+      const { error } = await supabase.from("golf_payments").delete().eq("id", id);
+      if (error) throw new Error(error.message);
+      await loadAll();
+    };
+
     return {
       courses,
       players,
       rounds,
+      bets: betRows.map(mapBet),
+      payments: paymentRows.map(mapPayment),
+      addBet,
+      deleteBet,
+      addPayment,
+      deletePayment,
       loading,
       addCourse,
       updateCourse,
@@ -360,7 +456,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       coursesById: new Map(courses.map((c) => [c.id, c])),
       playersById: new Map(players.map((p) => [p.id, p])),
     };
-  }, [courseRows, playerRows, roundRows, scoreRows, loading, selfUserId, loadAll]);
+  }, [courseRows, playerRows, roundRows, scoreRows, betRows, paymentRows, loading, selfUserId, loadAll]);
 
   return <AppDataCtx.Provider value={value}>{children}</AppDataCtx.Provider>;
 }

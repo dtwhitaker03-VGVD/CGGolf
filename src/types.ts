@@ -96,3 +96,35 @@ export interface Round {
   notes?: string;
   createdAt: string;
 }
+
+export type BetType = "straight" | "spread" | "overunder";
+
+/**
+ * A private wager between two players on one round. The underdog risks
+ * `stake`; the favorite risks stake x favOdds (1 = even bet).
+ * - straight: lowest total wins.
+ * - spread: the favorite lays `line` strokes; wins only by MORE than `line`, exactly `line` is a push.
+ * - overunder: the favorite's total against `line`; the favorite takes `side`, the other player the opposite.
+ */
+export interface Bet {
+  id: string;
+  roundId: string;
+  type: BetType;
+  favId: string;
+  dogId: string;
+  line?: number;
+  side?: "under" | "over";
+  stake: number;
+  favOdds: number;
+}
+
+export type NewBet = Omit<Bet, "id" | "roundId">;
+
+export interface Payment {
+  id: string;
+  fromId: string;
+  toId: string;
+  amount: number;
+  note?: string;
+  createdAt: string;
+}

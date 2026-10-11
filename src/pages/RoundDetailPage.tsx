@@ -14,6 +14,8 @@ import { Button, Card, EmptyState, LinkButton, PageHeader, TeeDot } from "../com
 import { ScoreStepper } from "../components/ScoreStepper";
 import { Leaderboards } from "../components/Leaderboards";
 import { roundTags } from "../components/RoundSummary";
+import { BetsPanel } from "../components/BetsPanel";
+import { describeResult, evaluateSaved } from "../lib/bets";
 
 /** Circle for birdie or better, square for bogey or worse -- the traditional scorecard marks. */
 function scoreMark(strokes: number, par: number): string {
@@ -28,7 +30,7 @@ function scoreMark(strokes: number, par: number): string {
 export function RoundDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { rounds, players, coursesById, playersById, updateRound, deleteRound } = useAppData();
+  const { rounds, players, bets, coursesById, playersById, updateRound, deleteRound, addBet, deleteBet } = useAppData();
 
   const round = useMemo(() => rounds.find((r) => r.id === id), [rounds, id]);
   const course = round ? coursesById.get(round.courseId) : undefined;
@@ -237,6 +239,24 @@ export function RoundDetailPage() {
           </p>
         )}
       </Card>
+
+      <BetsPanel
+        players={players}
+        playerIds={round.playerIds}
+        bets={bets
+          .filter((b) => b.roundId === round.id)
+          .map((b) => ({
+            key: b.id,
+            bet: b,
+            status: describeResult(
+              b,
+              evaluateSaved(b, { ...round, scores }, course),
+              (pid) => playersById.get(pid)?.name.split(" ")[0] ?? "?",
+            ),
+          }))}
+        onAdd={(b) => addBet(round.id, b)}
+        onRemove={(k) => deleteBet(k)}
+      />
 
       {editing ? (
         <Button className="w-full mb-3" disabled={busy || !draft} onClick={saveEdits}>

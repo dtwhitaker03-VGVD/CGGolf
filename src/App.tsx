@@ -13,6 +13,7 @@ import { RoundDetailPage } from "./pages/RoundDetailPage";
 import { StatsPage } from "./pages/StatsPage";
 import { PlayerStatsPage } from "./pages/PlayerStatsPage";
 import { AboutHandicapsPage } from "./pages/AboutHandicapsPage";
+import { MoneyPage } from "./pages/MoneyPage";
 import { CourseDetailPage } from "./pages/CourseDetailPage";
 
 function FullScreenMessage({ children }: { children: React.ReactNode }) {
@@ -47,6 +48,7 @@ function AppRoutes() {
             <Route path="/round/new" element={<NewRoundPage />} />
             <Route path="/rounds" element={<RoundsPage />} />
             <Route path="/round/:id" element={<RoundDetailPage />} />
+            <Route path="/money" element={<MoneyPage />} />
             <Route path="/stats" element={<StatsPage />} />
             <Route path="/stats/:id" element={<PlayerStatsPage />} />
             <Route path="/stats/course/:id" element={<CourseStatsRedirect />} />

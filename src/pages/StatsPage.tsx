@@ -19,7 +19,11 @@ export function StatsPage() {
 
   return (
     <div>
-      <PageHeader title="Stats" subtitle="Tap a player for their handicap trend" />
+      <PageHeader
+        title="Stats"
+        subtitle="Tap a player for their handicap trend"
+        action={<Link to="/money" className="text-sm font-medium text-green-700">💵 Money</Link>}
+      />
       <div className="space-y-2">
         {players.map((player) => {
           const idx = playerIndex(player, rounds, coursesById);

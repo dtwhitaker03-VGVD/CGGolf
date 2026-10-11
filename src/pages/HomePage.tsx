@@ -46,6 +46,10 @@ export function HomePage() {
         ⛳ New round
       </LinkButton>
       <p className="text-center text-sm mb-4">
+        <Link to="/money" className="text-green-700 font-medium">
+          💵 Money
+        </Link>
+        <span className="text-slate-300"> · </span>
         <Link to="/courses/new" className="text-slate-500 font-medium">
           + Add course
         </Link>

@@ -26,6 +26,7 @@ import {
   type HoleRelStat,
   type ScoreStats,
 } from "../lib/stats";
+import { ledgerFromBets } from "../lib/bets";
 import { headToHeadRecords, playerNetStats, type Record3 } from "../lib/headToHead";
 import { roundTags } from "../components/RoundSummary";
 import { Card, EmptyState, LinkButton, PageHeader } from "../components/ui";
@@ -120,7 +121,7 @@ function PlayerHoleTable({ player, courses, rounds }: { player: Player; courses:
 
 export function PlayerStatsPage() {
   const { id } = useParams();
-  const { players, playersById, rounds, coursesById } = useAppData();
+  const { players, playersById, rounds, bets, coursesById } = useAppData();
   const player = id ? playersById.get(id) : undefined;
 
   if (!player) {
@@ -144,6 +145,11 @@ export function PlayerStatsPage() {
   const bestCourse = bestCourseStat ? coursesById.get(bestCourseStat.courseId) : undefined;
 
   const h2h = headToHeadRecords(player, players, rounds, coursesById);
+  const dollars = new Map<string, number>();
+  for (const e of ledgerFromBets(bets, rounds, coursesById)) {
+    if (e.winnerId === player.id) dollars.set(e.loserId, (dollars.get(e.loserId) ?? 0) + e.amount);
+    else if (e.loserId === player.id) dollars.set(e.winnerId, (dollars.get(e.winnerId) ?? 0) - e.amount);
+  }
   const net = playerNetStats(player, rounds, coursesById);
   const parTypes = playerParTypeStats(player.id, rounds, coursesById);
   const lifetime = playerHoleCounts(player.id, rounds, coursesById);
@@ -310,7 +316,14 @@ export function PlayerStatsPage() {
                     <tr key={row.opponentId} className="border-t border-slate-100">
                       <td className="py-2 text-left">
                         <Link to={`/stats/${opp.id}`} className="font-medium text-slate-800">{opp.name}</Link>
-                        <p className="text-[11px] text-slate-400">{row.rounds} round{row.rounds === 1 ? "" : "s"}</p>
+                        <p className="text-[11px] text-slate-400">
+                          {row.rounds} round{row.rounds === 1 ? "" : "s"}
+                          {dollars.has(opp.id) && (
+                            <span className={dollars.get(opp.id)! >= 0 ? " text-green-600" : " text-red-600"}>
+                              {" · "}{dollars.get(opp.id)! >= 0 ? "+" : "−"}${Math.abs(Math.round(dollars.get(opp.id)! * 100) / 100)}
+                            </span>
+                          )}
+                        </p>
                       </td>
                       <td>
                         <RecordText r={row.straight} />

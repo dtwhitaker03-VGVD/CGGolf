@@ -24,7 +24,9 @@ import {
 import { Button, Card, EmptyState, Field, LinkButton, PageHeader, TeeDot, inputClass } from "../components/ui";
 import { ScoreStepper } from "../components/ScoreStepper";
 import { Leaderboards } from "../components/Leaderboards";
-import type { PlayerSetup, RoundHoles, RoundMode, ScoringMethod, TeamGameType } from "../types";
+import { BetsPanel } from "../components/BetsPanel";
+import { describeResult, evaluateBet } from "../lib/bets";
+import type { NewBet, PlayerSetup, RoundHoles, RoundMode, ScoringMethod, TeamGameType } from "../types";
 
 // In-progress round state is kept on this device so closing or reloading the
 // app mid-round doesn't lose it -- it's only saved to Supabase once finalized.
@@ -52,6 +54,7 @@ interface Draft {
   scores: Record<string, number[]>;
   dropped: Record<string, number>;
   hole: number;
+  bets?: NewBet[];
 }
 
 function today(): string {
@@ -109,7 +112,7 @@ function Pill({
 export function NewRoundPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const { courses, players, rounds, coursesById, addPlayer, addRound } = useAppData();
+  const { courses, players, rounds, coursesById, addPlayer, addRound, addBet } = useAppData();
 
   const [pendingDraft, setPendingDraft] = useState<Draft | null>(() => {
     const d = loadDraft();
@@ -133,6 +136,7 @@ export function NewRoundPage() {
   const [scores, setScores] = useState<Record<string, number[]>>({});
   const [dropped, setDropped] = useState<Record<string, number>>({});
   const [hole, setHole] = useState(0);
+  const [bets, setBets] = useState<NewBet[]>([]);
   const [guestName, setGuestName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -159,6 +163,7 @@ export function NewRoundPage() {
     setScores(d.scores);
     setDropped(d.dropped);
     setHole(d.hole);
+    setBets((d.bets ?? []).filter((b) => valid.includes(b.favId) && valid.includes(b.dogId)));
     setStep(valid.length > 0 ? d.step : 2);
     setPendingDraft(null);
   }
@@ -179,9 +184,9 @@ export function NewRoundPage() {
     if (pendingDraft || !courseId || step === 1) return;
     saveDraft({
       step, courseId, date, holes: holesPlayed, selected, entries, mode, scoring,
-      teamGameType, teamHandicap, teamOf, teamCount, scores, dropped, hole,
+      teamGameType, teamHandicap, teamOf, teamCount, scores, dropped, hole, bets,
     });
-  }, [pendingDraft, step, courseId, date, holesPlayed, selected, entries, mode, scoring, teamGameType, teamHandicap, teamOf, teamCount, scores, dropped, hole]);
+  }, [pendingDraft, step, courseId, date, holesPlayed, selected, entries, mode, scoring, teamGameType, teamHandicap, teamOf, teamCount, scores, dropped, hole, bets]);
 
   // Preselect yourself once your player row has loaded.
   const preselectedSelf = useRef(false);
@@ -383,6 +388,8 @@ export function NewRoundPage() {
         teamHandicap: state.teamHandicap,
         droppedPlayers: state.droppedPlayers,
       });
+      const live = bets.filter((b) => selected.includes(b.favId) && selected.includes(b.dogId));
+      for (const b of live) await addBet(round.id, b);
       saveDraft(null);
       navigate(`/round/${round.id}`, { replace: true });
     } catch (e) {
@@ -935,6 +942,23 @@ export function NewRoundPage() {
 
       <div className="mt-3">
         <Leaderboards round={state} course={course} players={players} through={hole} live />
+      </div>
+
+      <div className="mt-3">
+        <BetsPanel
+          players={players}
+          playerIds={selected}
+          bets={bets.map((b, i) => {
+            const r = evaluateBet(b, { scores, droppedPlayers: dropped, holeCount: holes.length }, isReview);
+            return {
+              key: String(i),
+              bet: b,
+              status: describeResult(b, r, (id) => players.find((p) => p.id === id)?.name.split(" ")[0] ?? "?"),
+            };
+          })}
+          onAdd={(b) => setBets((prev) => [...prev, b])}
+          onRemove={(k) => setBets((prev) => prev.filter((_, i) => String(i) !== k))}
+        />
       </div>
 
       <button type="button" className="text-sm font-medium text-slate-400 mt-3 block mx-auto" onClick={discardRound}>
