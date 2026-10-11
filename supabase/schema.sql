@@ -26,14 +26,8 @@ create table if not exists public.golf_players (
   user_id uuid references auth.users (id) on delete set null unique,
   name text not null,
   color text not null default '#15803d',
-  -- Handicap index to use until the app can calculate one from logged rounds
-  -- (needs 3+ complete, rated 18-hole rounds). E.g. the number on a GHIN card.
-  starting_index numeric,
   created_at timestamptz not null default now()
 );
-
-alter table public.golf_players
-  add column if not exists starting_index numeric;
 
 create table if not exists public.golf_courses (
   id uuid primary key default gen_random_uuid(),
