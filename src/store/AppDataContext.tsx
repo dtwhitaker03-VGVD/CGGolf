@@ -281,7 +281,11 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   }, [session, loadAll]);
 
   const value = useMemo<AppData>(() => {
-    const courses = courseRows.map(mapCourse);
+    // Cape Jaycee is where the group plays most, so it leads every course list and dropdown.
+    const isHome = (c: Course) => /jaycee/i.test(c.name);
+    const courses = courseRows
+      .map(mapCourse)
+      .sort((x, y) => Number(isHome(y)) - Number(isHome(x)) || x.name.localeCompare(y.name));
     const players = playerRows.map((row) => mapPlayer(row, selfUserId));
     const rounds = mapRounds(roundRows, scoreRows);
 
