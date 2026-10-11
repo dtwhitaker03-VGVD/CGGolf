@@ -326,3 +326,41 @@ export function playerWorstHolesByCourse(
     (c, cur) => c.avgRelToPar > cur.avgRelToPar || (c.avgRelToPar === cur.avgRelToPar && c.par > cur.par),
   );
 }
+
+export interface PlayerHoleStat {
+  holeNumber: number;
+  par: number;
+  plays: number;
+  average: number | null;
+  best: number | null;
+  worst: number | null;
+  /** Average strokes over par on this hole (negative = under par). */
+  avgRelToPar: number | null;
+}
+
+/** One player's results on every hole of a course: plays, average, best, worst, and average vs par. */
+export function playerHoleStats(playerId: string, course: Course, rounds: Round[]): PlayerHoleStat[] {
+  const acc = course.holes.map(() => ({ sum: 0, n: 0, best: Infinity, worst: 0 }));
+  for (const round of rounds) {
+    if (round.courseId !== course.id) continue;
+    for (const { holeIndex, strokes } of recordedHoles(round, course, playerId)) {
+      const a = acc[holeIndex];
+      a.sum += strokes;
+      a.n += 1;
+      a.best = Math.min(a.best, strokes);
+      a.worst = Math.max(a.worst, strokes);
+    }
+  }
+  return course.holes.map((h, i) => {
+    const a = acc[i];
+    return {
+      holeNumber: h.number,
+      par: h.par,
+      plays: a.n,
+      average: a.n ? Math.round((a.sum / a.n) * 10) / 10 : null,
+      best: a.n ? a.best : null,
+      worst: a.n ? a.worst : null,
+      avgRelToPar: a.n ? Math.round((a.sum / a.n - h.par) * 10) / 10 : null,
+    };
+  });
+}

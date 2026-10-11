@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAppData } from "../store/AppDataContext";
 import { playerIndex } from "../lib/players";
@@ -17,6 +18,7 @@ import {
   playerCourseRelToPar,
   playerHoleCounts,
   playerHoleCountsByCourse,
+  playerHoleStats,
   playerTotalsByCourse,
   playerWorstHolesByCourse,
   MIN_ROUNDS_FOR_HOLE_SUPERLATIVE,
@@ -26,7 +28,7 @@ import {
 import { roundTags } from "../components/RoundSummary";
 import { Card, EmptyState, LinkButton, PageHeader } from "../components/ui";
 import { TrendChart } from "../components/TrendChart";
-import type { Course } from "../types";
+import type { Course, Player, Round } from "../types";
 
 function Count({ n, label, className = "" }: { n: number; label: string; className?: string }) {
   return (
@@ -43,6 +45,57 @@ function HoleLine({ kind, stat, color }: { kind: string; stat: HoleRelStat; colo
       {kind} hole: #{stat.holeNumber} (par {stat.par}) ·{" "}
       <span className={`font-medium ${color}`}>{formatVsPar(stat.avgRelToPar)}</span> avg
     </p>
+  );
+}
+
+function PlayerHoleTable({ player, courses, rounds }: { player: Player; courses: Course[]; rounds: Round[] }) {
+  const [courseId, setCourseId] = useState(courses[0]?.id ?? "");
+  const course = courses.find((c) => c.id === courseId) ?? courses[0];
+  if (!course) return null;
+  const stats = playerHoleStats(player.id, course, rounds);
+  const rel = (v: number | null) => (v === null ? "—" : v === 0 ? "E" : v > 0 ? `+${v}` : `${v}`);
+  const relColor = (v: number | null) =>
+    v === null ? "" : v < 0 ? "text-green-600" : v > 0 ? "text-red-600" : "text-slate-700";
+  const nines = course.holes.length > 9 ? [stats.slice(0, 9), stats.slice(9)] : [stats];
+
+  return (
+    <Card className="mb-4 overflow-x-auto">
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">Hole by hole</p>
+      <select className="w-full rounded-lg border border-slate-300 px-2 py-2 text-base mb-3" value={course.id} onChange={(e) => setCourseId(e.target.value)}>
+        {courses.map((c) => (
+          <option key={c.id} value={c.id}>{c.name}</option>
+        ))}
+      </select>
+      {nines.map((nine, n) => (
+        <table key={n} className="w-full text-sm tabular-nums mb-2">
+          <thead>
+            <tr className="text-xs text-slate-400">
+              <th className="font-medium text-left pb-1">{nines.length === 1 ? "Hole" : n === 0 ? "Front" : "Back"}</th>
+              <th className="font-medium pb-1">Par</th>
+              <th className="font-medium pb-1">Avg</th>
+              <th className="font-medium pb-1">+/-</th>
+              <th className="font-medium pb-1">Best</th>
+              <th className="font-medium pb-1">Worst</th>
+              <th className="font-medium pb-1">Played</th>
+            </tr>
+          </thead>
+          <tbody className="text-center">
+            {nine.map((h) => (
+              <tr key={h.holeNumber} className="border-t border-slate-100">
+                <td className="py-1 text-left font-medium">{h.holeNumber}</td>
+                <td>{h.par}</td>
+                <td className="font-semibold text-slate-900">{h.average ?? "—"}</td>
+                <td className={`font-semibold ${relColor(h.avgRelToPar)}`}>{rel(h.avgRelToPar)}</td>
+                <td className="text-green-600">{h.best ?? "—"}</td>
+                <td className="text-red-600">{h.worst ?? "—"}</td>
+                <td className="text-slate-400">{h.plays}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ))}
+      <p className="text-[11px] text-slate-400">Every recorded score counts, including 9-hole rounds and holes played before leaving early.</p>
+    </Card>
   );
 }
 
@@ -164,6 +217,10 @@ export function PlayerStatsPage() {
         </div>
         <p className="text-center text-[11px] text-slate-400 mt-3">{lifetime.holesPlayed} holes played</p>
       </Card>
+
+      {courseRows.length > 0 && (
+        <PlayerHoleTable player={player} courses={courseRows.map((r) => r.course)} rounds={rounds} />
+      )}
 
       <Card className="mb-4">
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">By course</p>
