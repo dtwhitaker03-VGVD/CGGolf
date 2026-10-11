@@ -64,6 +64,15 @@ function PlayerHoleTable({ player, courses, rounds }: { player: Player; courses:
   const rel = (v: number | null) => (v === null ? "—" : v === 0 ? "E" : v > 0 ? `+${v}` : `${v}`);
   const relColor = (v: number | null) =>
     v === null ? "" : v < 0 ? "text-green-600" : v > 0 ? "text-red-600" : "text-slate-700";
+  // 1 = best hole (lowest average vs par) .. N = worst; ties go to the hole with more plays, then lower number.
+  const ranks = new Map<number, number>();
+  stats
+    .filter((h) => h.avgRelToPar !== null)
+    .sort(
+      (a, b) =>
+        (a.avgRelToPar as number) - (b.avgRelToPar as number) || b.plays - a.plays || a.holeNumber - b.holeNumber,
+    )
+    .forEach((h, i) => ranks.set(h.holeNumber, i + 1));
   const nines = course.holes.length > 9 ? [stats.slice(0, 9), stats.slice(9)] : [stats];
 
   return (
@@ -85,6 +94,7 @@ function PlayerHoleTable({ player, courses, rounds }: { player: Player; courses:
               <th className="font-medium pb-1">Best</th>
               <th className="font-medium pb-1">Worst</th>
               <th className="font-medium pb-1">Played</th>
+              <th className="font-medium pb-1" title="1 = your best hole here, by average vs par">Rank</th>
             </tr>
           </thead>
           <tbody className="text-center">
@@ -97,12 +107,13 @@ function PlayerHoleTable({ player, courses, rounds }: { player: Player; courses:
                 <td className="text-green-600">{h.best ?? "—"}</td>
                 <td className="text-red-600">{h.worst ?? "—"}</td>
                 <td className="text-slate-400">{h.plays}</td>
+                <td className="font-semibold">{ranks.get(h.holeNumber) ?? "—"}</td>
               </tr>
             ))}
           </tbody>
         </table>
       ))}
-      <p className="text-[11px] text-slate-400">Every recorded score counts, including 9-hole rounds and holes played before leaving early.</p>
+      <p className="text-[11px] text-slate-400">Rank: 1 = your best hole on this course, by average vs par. Every recorded score counts, including 9-hole rounds and holes played before leaving early.</p>
     </Card>
   );
 }
