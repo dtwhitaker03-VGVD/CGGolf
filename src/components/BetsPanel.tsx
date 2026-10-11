@@ -49,7 +49,7 @@ export function BetsPanel({
   const [dogId, setDogId] = useState(playerIds[1] ?? "");
   const [line, setLine] = useState("");
   const [side, setSide] = useState<"under" | "over">("under");
-  const [stake, setStake] = useState("1");
+  const [stake, setStake] = useState("");
   const [odds, setOdds] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -64,7 +64,7 @@ export function BetsPanel({
   const preview =
     oddsN !== null && stakeN > 0 && favEff
       ? oddsN === 1
-        ? `Even bet — $${stakeN} each`
+        ? `Even wager — $${stakeN} each`
         : `${nameOf(favEff)} risks $${favRisk({ stake: stakeN, favOdds: oddsN })} to win $${stakeN}; ${nameOf(dogEff)} risks $${stakeN} to win $${favRisk({ stake: stakeN, favOdds: oddsN })}`
       : "";
 
@@ -89,9 +89,10 @@ export function BetsPanel({
       });
       setOpen(false);
       setLine("");
+      setStake("");
       setOdds("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't add the bet.");
+      setError(e instanceof Error ? e.message : "Couldn't add the wager.");
     } finally {
       setBusy(false);
     }
@@ -100,15 +101,15 @@ export function BetsPanel({
   return (
     <Card className="mb-4">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Bets 💵</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Wagers 💵</p>
         {!locked && playerIds.length >= 2 && (
           <button type="button" className="text-sm font-medium text-green-700" onClick={() => setOpen(!open)}>
-            {open ? "Cancel" : "+ Add bet"}
+            {open ? "Cancel" : "+ Add wager"}
           </button>
         )}
       </div>
 
-      {bets.length === 0 && !open && <p className="text-sm text-slate-500">No bets on this round.</p>}
+      {bets.length === 0 && !open && <p className="text-sm text-slate-500">No wagers on this round.</p>}
       <ul className="divide-y divide-slate-100">
         {bets.map((b) => (
           <li key={b.key} className="py-2 flex items-start justify-between gap-2">
@@ -121,7 +122,7 @@ export function BetsPanel({
                 type="button"
                 className="text-xs text-red-500 shrink-0"
                 onClick={() => {
-                  if (confirm("Remove this bet?")) void onRemove(b.key);
+                  if (confirm("Remove this wager?")) void onRemove(b.key);
                 }}
               >
                 Remove
@@ -133,7 +134,7 @@ export function BetsPanel({
 
       {open && (
         <div className="mt-3 space-y-3 border-t border-slate-100 pt-3">
-          <Field label="Bet type">
+          <Field label="Wager type">
             <select className={inputClass} value={type} onChange={(e) => setType(e.target.value as BetType)}>
               {(Object.keys(TYPE_LABEL) as BetType[]).map((t) => (
                 <option key={t} value={t}>{TYPE_LABEL[t]}</option>
@@ -154,7 +155,7 @@ export function BetsPanel({
           </div>
           {type === "spread" && (
             <Field label={`Strokes ${nameOf(favEff)} gives ${nameOf(dogEff)}`}>
-              <input inputMode="decimal" className={inputClass} value={line} onChange={(e) => setLine(e.target.value)} placeholder="4" />
+              <input inputMode="decimal" className={inputClass} value={line} onChange={(e) => setLine(e.target.value)} />
               <p className="text-xs text-slate-400 mt-1">Winning by exactly this many is a push. Use a half (4.5) to avoid pushes.</p>
             </Field>
           )}
@@ -167,7 +168,7 @@ export function BetsPanel({
                 </select>
               </Field>
               <Field label="Score line">
-                <input inputMode="decimal" className={inputClass} value={line} onChange={(e) => setLine(e.target.value)} placeholder="90" />
+                <input inputMode="decimal" className={inputClass} value={line} onChange={(e) => setLine(e.target.value)} />
               </Field>
             </div>
           )}
@@ -176,13 +177,13 @@ export function BetsPanel({
               <input inputMode="decimal" className={inputClass} value={stake} onChange={(e) => setStake(e.target.value)} />
             </Field>
             <Field label="Odds (blank = even)">
-              <input className={inputClass} value={odds} onChange={(e) => setOdds(e.target.value)} placeholder="3-1" />
+              <input className={inputClass} value={odds} onChange={(e) => setOdds(e.target.value)} />
             </Field>
           </div>
           {preview && <p className="text-xs text-slate-500">{preview}</p>}
           {error && <p className="text-sm text-red-600">{error}</p>}
           <Button className="w-full" disabled={busy} onClick={() => void submit()}>
-            {busy ? "Adding…" : "Add bet"}
+            {busy ? "Adding…" : "Add wager"}
           </Button>
         </div>
       )}

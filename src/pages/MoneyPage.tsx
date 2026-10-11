@@ -72,7 +72,7 @@ export function MoneyPage() {
 
   return (
     <div>
-      <PageHeader title="Money" subtitle="Who owes who, from bets on rounds" />
+      <PageHeader title="Money" subtitle="Who owes who, from wagers on rounds" />
 
       <Card className="mb-4">
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">Who owes who</p>
@@ -110,7 +110,7 @@ export function MoneyPage() {
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">Lifetime winnings</p>
         {standings.length === 0 ? (
           <p className="text-sm text-slate-500">
-            No settled bets yet. Add bets from a round's page or while scoring.
+            No settled wagers yet. Add wagers from a round's page or while scoring.
           </p>
         ) : (
           <ul className="divide-y divide-slate-100">
@@ -127,7 +127,7 @@ export function MoneyPage() {
             ))}
           </ul>
         )}
-        <p className="text-[11px] text-slate-400 mt-2">Total won minus lost on bets. Payments don't change this.</p>
+        <p className="text-[11px] text-slate-400 mt-2">Total won minus lost on wagers. Payments don't change this.</p>
       </Card>
 
       <Card className="mb-4 space-y-3">
@@ -147,7 +147,7 @@ export function MoneyPage() {
           </Field>
         </div>
         <Field label="Amount ($)">
-          <input inputMode="decimal" className={inputClass} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="5" />
+          <input inputMode="decimal" className={inputClass} value={amount} onChange={(e) => setAmount(e.target.value)} />
         </Field>
         <Button
           className="w-full"
