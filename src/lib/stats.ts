@@ -257,7 +257,7 @@ export interface HoleRelStat {
  * player's best or worst hole at a course -- otherwise one lucky (or
  * unlucky) swing on an otherwise-unplayed hole would win the title.
  */
-export const MIN_ROUNDS_FOR_HOLE_SUPERLATIVE = 3;
+export const MIN_ROUNDS_FOR_HOLE_SUPERLATIVE = 2;
 
 function holeAggregates(playerId: string, rounds: Round[], coursesById: Map<string, Course>): HoleRelStat[] {
   const byHole = new Map<string, { courseId: string; holeIndex: number; sum: number; count: number }>();
@@ -301,7 +301,7 @@ function pickPerCourse(
 
 /**
  * For each course a player has played, the hole they score best on (lowest
- * average relative to par). Only holes with 3+ recorded scores qualify;
+ * average relative to par). Only holes with 2+ recorded scores qualify;
  * ties go to the higher-par hole, the more impressive result.
  */
 export function playerBestHolesByCourse(
