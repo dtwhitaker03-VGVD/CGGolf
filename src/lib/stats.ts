@@ -364,3 +364,39 @@ export function playerHoleStats(playerId: string, course: Course, rounds: Round[
     };
   });
 }
+
+export interface ParTypeStat {
+  par: number;
+  holes: number;
+  average: number;
+  /** Average strokes over par. */
+  avgRelToPar: number;
+}
+
+/** A player's scoring on par 3s, 4s and 5s across every recorded hole. */
+export function playerParTypeStats(
+  playerId: string,
+  rounds: Round[],
+  coursesById: Map<string, Course>,
+): ParTypeStat[] {
+  const acc = new Map<number, { sum: number; n: number }>();
+  for (const round of rounds) {
+    const course = coursesById.get(round.courseId);
+    if (!course) continue;
+    for (const { holeIndex, strokes } of recordedHoles(round, course, playerId)) {
+      const par = course.holes[holeIndex].par;
+      const a = acc.get(par) ?? { sum: 0, n: 0 };
+      a.sum += strokes;
+      a.n += 1;
+      acc.set(par, a);
+    }
+  }
+  return [...acc.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([par, { sum, n }]) => ({
+      par,
+      holes: n,
+      average: Math.round((sum / n) * 100) / 100,
+      avgRelToPar: Math.round((sum / n - par) * 100) / 100,
+    }));
+}

@@ -18,6 +18,7 @@ import {
   playerCourseRelToPar,
   playerHoleCounts,
   playerHoleCountsByCourse,
+  playerParTypeStats,
   playerHoleStats,
   playerTotalsByCourse,
   playerWorstHolesByCourse,
@@ -25,6 +26,7 @@ import {
   type HoleRelStat,
   type ScoreStats,
 } from "../lib/stats";
+import { headToHeadRecords, playerNetStats, type Record3 } from "../lib/headToHead";
 import { roundTags } from "../components/RoundSummary";
 import { Card, EmptyState, LinkButton, PageHeader } from "../components/ui";
 import { TrendChart } from "../components/TrendChart";
@@ -46,6 +48,12 @@ function HoleLine({ kind, stat, color }: { kind: string; stat: HoleRelStat; colo
       <span className={`font-medium ${color}`}>{formatVsPar(stat.avgRelToPar)}</span> avg
     </p>
   );
+}
+
+function RecordText({ r }: { r: Record3 | null }) {
+  if (!r) return <span className="text-slate-300">—</span>;
+  const color = r.w > r.l ? "text-green-600" : r.w < r.l ? "text-red-600" : "text-slate-700";
+  return <span className={`font-semibold tabular-nums ${color}`}>{r.w}-{r.l}-{r.t}</span>;
 }
 
 function PlayerHoleTable({ player, courses, rounds }: { player: Player; courses: Course[]; rounds: Round[] }) {
@@ -101,7 +109,7 @@ function PlayerHoleTable({ player, courses, rounds }: { player: Player; courses:
 
 export function PlayerStatsPage() {
   const { id } = useParams();
-  const { playersById, rounds, coursesById } = useAppData();
+  const { players, playersById, rounds, coursesById } = useAppData();
   const player = id ? playersById.get(id) : undefined;
 
   if (!player) {
@@ -124,6 +132,9 @@ export function PlayerStatsPage() {
   })[0];
   const bestCourse = bestCourseStat ? coursesById.get(bestCourseStat.courseId) : undefined;
 
+  const h2h = headToHeadRecords(player, players, rounds, coursesById);
+  const net = playerNetStats(player, rounds, coursesById);
+  const parTypes = playerParTypeStats(player.id, rounds, coursesById);
   const lifetime = playerHoleCounts(player.id, rounds, coursesById);
   const totalsByCourse = playerTotalsByCourse(player.id, rounds, coursesById);
   const countsByCourse = playerHoleCountsByCourse(player.id, rounds, coursesById);
@@ -216,6 +227,99 @@ export function PlayerStatsPage() {
           <Count n={lifetime.triplePlus} label="Triple+ bogeys" className="text-red-700" />
         </div>
         <p className="text-center text-[11px] text-slate-400 mt-3">{lifetime.holesPlayed} holes played</p>
+      </Card>
+
+      <Card className="mb-4">
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">Net scores</p>
+        {net ? (
+          <>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div>
+                <p className="text-xs text-slate-400">Best net</p>
+                <Link to={`/round/${net.bestRoundId}`} className="text-xl font-bold text-green-600 tabular-nums">{net.bestNet}</Link>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">Avg net</p>
+                <p className="text-xl font-bold tabular-nums">{net.avgNet}</p>
+                <p className="text-[11px] text-slate-400">gross {net.avgGross}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">Net under par</p>
+                <p className="text-xl font-bold tabular-nums">{net.beatPar} <span className="text-xs text-slate-400 font-normal">of {net.rounds}</span></p>
+              </div>
+            </div>
+            <p className="text-[11px] text-slate-400 mt-2">
+              Complete 18-hole rounds, with strokes from the current index ({formatIndex(idx.current)}).
+            </p>
+          </>
+        ) : (
+          <p className="text-sm text-slate-500">Needs a handicap index (3+ rated 18-hole rounds).</p>
+        )}
+      </Card>
+
+      <Card className="mb-4">
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">Scoring by hole type</p>
+        {parTypes.length === 0 ? (
+          <p className="text-sm text-slate-500">No holes logged yet.</p>
+        ) : (
+          <div className="grid grid-cols-3 gap-2 text-center">
+            {parTypes.map((t) => (
+              <div key={t.par}>
+                <p className="text-xs text-slate-400">Par {t.par}s</p>
+                <p className="text-xl font-bold tabular-nums">{t.average}</p>
+                <p className={`text-xs font-medium ${t.avgRelToPar > 0 ? "text-red-600" : "text-green-600"}`}>
+                  {t.avgRelToPar > 0 ? "+" : ""}{t.avgRelToPar} per hole
+                </p>
+                <p className="text-[11px] text-slate-400">{t.holes} holes</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      <Card className="mb-4">
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">Head to head</p>
+        {h2h.length === 0 ? (
+          <p className="text-sm text-slate-500">No shared rounds yet.</p>
+        ) : (
+          <>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-xs text-slate-400">
+                  <th className="font-medium text-left pb-1">vs</th>
+                  <th className="font-medium pb-1">Straight up</th>
+                  <th className="font-medium pb-1">With handicap</th>
+                </tr>
+              </thead>
+              <tbody className="text-center">
+                {h2h.map((row) => {
+                  const opp = playersById.get(row.opponentId);
+                  if (!opp) return null;
+                  return (
+                    <tr key={row.opponentId} className="border-t border-slate-100">
+                      <td className="py-2 text-left">
+                        <Link to={`/stats/${opp.id}`} className="font-medium text-slate-800">{opp.name}</Link>
+                        <p className="text-[11px] text-slate-400">{row.rounds} round{row.rounds === 1 ? "" : "s"}</p>
+                      </td>
+                      <td>
+                        <RecordText r={row.straight} />
+                        <p className="text-[11px] text-slate-400">holes <RecordText r={row.holesStraight} /></p>
+                      </td>
+                      <td>
+                        <RecordText r={row.handicap} />
+                        <p className="text-[11px] text-slate-400">holes <RecordText r={row.holesHandicap} /></p>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            <p className="text-[11px] text-slate-400 mt-2">
+              Wins-losses-ties from {player.name}'s side. Round records need both players to finish the same holes. The
+              handicap column replays each round using both players' current indexes, so it's hypothetical.
+            </p>
+          </>
+        )}
       </Card>
 
       {courseRows.length > 0 && (
